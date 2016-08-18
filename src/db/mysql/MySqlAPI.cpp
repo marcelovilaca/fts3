@@ -467,19 +467,24 @@ void MySqlAPI::getQueuesWithPending(std::vector<QueueId>& queues)
     try
     {
         soci::rowset<soci::row> rs1 = (sql.prepare <<
-                                       "select f.vo_name, f.source_se, f.dest_se from t_file f "
-                                           "where f.file_state = 'SUBMITTED' "
-                                           "group by f.vo_name, f.source_se, f.dest_se "
-                                           "order by null");
+            "SELECT f.vo_name, f.source_se, f.dest_se FROM t_file f "
+            "WHERE f.file_state IN ('SUBMITTED', 'CANDIDATE') "
+            "GROUP BY f.vo_name, f.source_se, f.dest_se "
+            "ORDER BY NULL");
 
         soci::statement stmt1 = (sql.prepare <<
-                                 "select file_id from t_file where source_se=:source_se and dest_se=:dest_se and vo_name=:vo_name and file_state='SUBMITTED' AND (hashed_id >= :hashStart AND hashed_id <= :hashEnd) LIMIT 1",
-                                 soci::use(source_se),
-                                 soci::use(dest_se),
-                                 soci::use(vo_name),
-                                 soci::use(hashSegment.start),
-                                 soci::use(hashSegment.end),
-                                 soci::into(file_id, isNull));
+            "SELECT file_id FROM t_file WHERE "
+            "  source_se = :source_se AND dest_se = :dest_se AND "
+            "  vo_name = :vo_name AND "
+            "  file_state IN ('SUBMITTED', 'CANDIDATE') AND "
+            "  (hashed_id >= :hashStart AND hashed_id <= :hashEnd) "
+            "  LIMIT 1",
+            soci::use(source_se),
+            soci::use(dest_se),
+            soci::use(vo_name),
+            soci::use(hashSegment.start),
+            soci::use(hashSegment.end),
+            soci::into(file_id, isNull));
 
         for (soci::rowset<soci::row>::const_iterator i1 = rs1.begin(); i1 != rs1.end(); ++i1)
         {
@@ -587,6 +592,9 @@ void MySqlAPI::getReadyTransfers(const std::vector<QueueId>& queues,
 
     try
     {
+        // For multireplica, we need to make sure we do not pick all of them in the first go!
+        std::map<std::string, int> multiReplicasFileIdForJob;
+
         // Iterate through queues, getting jobs IF the VO has not run out of credits
         // AND there are pending file transfers within the job
         for (auto it = queues.begin(); it != queues.end(); ++it)
@@ -649,7 +657,7 @@ void MySqlAPI::getReadyTransfers(const std::vector<QueueId>& queues,
                    "WHERE "
                    "    t_file.job_id = t_job.job_id AND "
                    "    t_file.vo_name=:voName AND t_file.source_se=:source AND t_file.dest_se=:dest AND "
-                   "    t_file.file_state = 'SUBMITTED'",
+                   "    t_file.file_state IN ('SUBMITTED', 'CANDIDATE')",
                    soci::use(it->voName), soci::use(it->sourceSe), soci::use(it->destSe),
                    soci::into(maxPriority, isMaxNull);
             if (isMaxNull == soci::i_null) {
@@ -673,7 +681,7 @@ void MySqlAPI::getReadyTransfers(const std::vector<QueueId>& queues,
                       "       f.user_filesize, f.file_metadata, j.job_metadata, f.file_index, f.bringonline_token, "
                       "       f.source_se, f.dest_se, f.selection_strategy, j.internal_job_params, j.job_type "
                       " FROM t_file f, t_job j "
-                      " WHERE f.job_id = j.job_id and  f.file_state = 'SUBMITTED' AND "
+                      " WHERE f.job_id = j.job_id and  f.file_state IN ('SUBMITTED', 'CANDIDATE') AND "
                       "     f.source_se = :source_se AND f.dest_se = :dest_se AND  "
                       "     f.vo_name = :vo_name AND "
                       "     (f.retry_timestamp is NULL OR f.retry_timestamp < :tTime) AND "
@@ -695,22 +703,20 @@ void MySqlAPI::getReadyTransfers(const std::vector<QueueId>& queues,
                 {
                     TransferFile& tfile = *ti;
 
-                    if(tfile.jobType == Job::kTypeMultipleReplica)
-                    {
-                        int total = 0;
+                    if(tfile.jobType == Job::kTypeMultipleReplica) {
                         int remain = 0;
-                        sql << " select count(*) as c1, "
-                            " (select count(*) from t_file where file_state<>'NOT_USED' and  job_id=:job_id)"
-                            " as c2 from t_file where job_id=:job_id",
-                            soci::use(tfile.jobId),
-                            soci::use(tfile.jobId),
-                            soci::into(total),
-                            soci::into(remain);
+                        sql << "SELECT COUNT(*) FROM t_file "
+                            " WHERE job_id = :jobId AND "
+                            "   file_state = 'CANDIDATE'",
+                            soci::use(tfile.jobId), soci::into(remain);
 
-                        tfile.lastReplica = (total == remain)? 1: 0;
+                        // 1 = the replica we've just picked
+                        tfile.lastReplica = (remain == 1);
                     }
-
-                    files[tfile.voName].push_back(tfile);
+                    if (tfile.jobType != Job::kTypeMultipleReplica || (multiReplicasFileIdForJob.find(tfile.jobId) == multiReplicasFileIdForJob.end())) {
+                        files[tfile.voName].push_back(tfile);
+                        multiReplicasFileIdForJob[tfile.jobId] = tfile.fileId;
+                    }
                 }
             }
             else
@@ -740,7 +746,7 @@ void MySqlAPI::getReadyTransfers(const std::vector<QueueId>& queues,
                                          "       f.user_filesize, f.file_metadata, j.job_metadata, f.file_index, f.bringonline_token, "
                                          "       f.source_se, f.dest_se, f.selection_strategy, j.internal_job_params, j.job_type "
                                          " FROM t_file f, t_job j "
-                                         " WHERE f.job_id = j.job_id and  f.file_state = 'SUBMITTED' AND    "
+                                         " WHERE f.job_id = j.job_id and  f.file_state IN ('SUBMITTED', 'CANDIDATE') AND    "
                                          "      f.source_se = :source_se AND f.dest_se = :dest_se AND "
                                          "      (j.job_type = 'N' OR j.job_type = 'R') AND  "
                                          "      f.vo_name = :vo_name AND "
@@ -774,22 +780,22 @@ void MySqlAPI::getReadyTransfers(const std::vector<QueueId>& queues,
                     {
                         TransferFile& tfile = *ti;
 
-                        if(tfile.jobType == Job::kTypeMultipleReplica)
-                        {
-                            int total = 0;
+                        if(tfile.jobType == Job::kTypeMultipleReplica) {
                             int remain = 0;
-                            sql << " select count(*) as c1, "
-                                " (select count(*) from t_file where file_state<>'NOT_USED' and  job_id=:job_id)"
-                                " as c2 from t_file where job_id=:job_id",
-                                soci::use(tfile.jobId),
-                                soci::use(tfile.jobId),
-                                soci::into(total),
-                                soci::into(remain);
 
-                            tfile.lastReplica = (total == remain)? 1: 0;
+                            sql << " SELECT COUNT(*) FROM t_file "
+                                "WHERE job_id = :jobId AND "
+                                "   file_state = 'CANDIDATE'",
+                                soci::use(tfile.jobId), soci::into(remain);
+
+                            // 1 = the replica we've just picked
+                            tfile.lastReplica = (remain == 1);
                         }
 
-                        files[tfile.voName].push_back(tfile);
+                        if (tfile.jobType != Job::kTypeMultipleReplica || (multiReplicasFileIdForJob.find(tfile.jobId) == multiReplicasFileIdForJob.end())) {
+                            files[tfile.voName].push_back(tfile);
+                            multiReplicasFileIdForJob[tfile.jobId] = tfile.fileId;
+                        }
                     }
                 }
             }
@@ -928,15 +934,13 @@ void MySqlAPI::getMultihopJobs(std::map< std::string, std::queue< std::pair<std:
 
 
 
-void MySqlAPI::useFileReplica(soci::session& sql, std::string jobId, int fileId)
+void MySqlAPI::useFileReplica(soci::session& sql, std::string jobId, int)
 {
     try
     {
-        soci::indicator selectionStrategyInd = soci::i_ok;
-        std::string selectionStrategy;
+        std::string selection_strategy;
         std::string vo_name;
-        int nextReplica = 0, alreadyActive;
-        soci::indicator nextReplicaInd = soci::i_ok;
+        int alreadyActive;
 
         //check if the file belongs to a multiple replica job
         std::string mreplica;
@@ -957,39 +961,12 @@ void MySqlAPI::useFileReplica(soci::session& sql, std::string jobId, int fileId)
                 return;
             }
 
-            //check if it's auto or manual
-            sql << " select selection_strategy, vo_name from t_file where file_id = :file_id",
-                soci::use(fileId), soci::into(selectionStrategy, selectionStrategyInd), soci::into(vo_name);
-            // default is orderly
-            if (selectionStrategyInd == soci::i_null) {
-                selectionStrategy = "orderly";
-            }
-
-            sql << "select min(file_id) from t_file where file_state = 'NOT_USED' and job_id=:job_id ",
-                soci::use(jobId), soci::into(nextReplica, nextReplicaInd);
-
-            if (selectionStrategy == "auto") {
-                int bestFileId = getBestNextReplica(sql, jobId, vo_name);
-                if (bestFileId > 0) {
-                    sql <<
-                        " UPDATE t_file "
-                            " SET file_state = 'SUBMITTED', finish_time=NULL "
-                            " WHERE job_id = :jobId AND file_id = :file_id  "
-                            " AND file_state = 'NOT_USED' ",
-                        soci::use(jobId), soci::use(bestFileId);
-                }
-                else {
-                    FTS3_COMMON_LOGGER_NEWLOG(DEBUG) << "Out of replicas for " << jobId << commit;
-                }
-            }
-            else {
-                sql <<
-                    " UPDATE t_file "
-                    " SET file_state = 'SUBMITTED', finish_time=NULL "
-                    " WHERE job_id = :jobId "
-                    " AND file_state = 'NOT_USED' and file_id=:file_id ",
-                    soci::use(jobId), soci::use(nextReplica);
-            }
+            sql <<
+                " UPDATE t_file "
+                " SET file_state = 'CANDIDATE', job_finished=NULL, finish_time=NULL "
+                " WHERE job_id = :jobId "
+                " AND file_state = 'NOT_USED' ",
+                soci::use(jobId);
         }
     }
     catch (std::exception& e)
@@ -1009,82 +986,6 @@ bool pairCompare( std::pair<std::pair<std::string, std::string>, int> i, std::pa
     return i.second < j.second;
 }
 
-
-int MySqlAPI::getBestNextReplica(soci::session& sql, const std::string & jobId, const std::string & voName)
-{
-    //for now consider only the less queued transfers, later add throughput and success rate
-    int bestFileId = 0;
-    std::string bestSource;
-    std::string bestDestination;
-    std::map<std::pair<std::string, std::string>, int> pair;
-    soci::indicator ind = soci::i_ok;
-
-    try
-    {
-        //get available pairs
-        soci::rowset<soci::row> rs = (sql.prepare <<
-            "select distinct source_se, dest_se from t_file where job_id=:jobId and file_state='NOT_USED'",
-            soci::use(jobId)
-        );
-
-        soci::rowset<soci::row>::const_iterator it;
-        for (it = rs.begin(); it != rs.end(); ++it)
-        {
-            std::string source_se = it->get<std::string>("source_se","");
-            std::string dest_se = it->get<std::string>("dest_se","");
-            int queued = 0;
-
-            //get queued for this link and vo
-            sql << " select count(*) from t_file where file_state='SUBMITTED' and "
-                " source_se=:source_se and dest_se=:dest_se and "
-                " vo_name=:voName ",
-                soci::use(source_se), soci::use(dest_se),soci::use(voName), soci::into(queued);
-
-            //get distinct source_se / dest_se
-            std::pair<std::string, std::string> key(source_se, dest_se);
-            pair.insert(std::make_pair(key, queued));
-
-            if(queued == 0) //pick the first one if the link is free
-                break;
-
-            //get success rate & throughput for this link, it is mapped to "filesize" column in t_optimizer_evolution table :)
-            /*
-            sql << " select filesize, throughput from t_optimizer_evolution where "
-                " source_se=:source_se and dest_se=:dest_se and filesize is not NULL and agrthroughput is not NULL "
-                " order by datetime desc limit 1 ",
-                soci::use(source_se), soci::use(dest_se),soci::into(successRate),soci::into(throughput);
-            */
-
-        }
-
-        //not waste queries
-        if(!pair.empty())
-        {
-            //get min queue length
-            std::pair<std::pair<std::string, std::string>, int> minValue = *min_element(pair.begin(), pair.end(), pairCompare );
-            bestSource =      (minValue.first).first;
-            bestDestination = (minValue.first).second;
-
-            //finally get the next-best file_id to be processed
-            sql << "select file_id from t_file where file_state='NOT_USED' and source_se=:source_se and dest_se=:dest_se and job_id=:jobId",
-                soci::use(bestSource), soci::use(bestDestination), soci::use(jobId), soci::into(bestFileId, ind);
-
-            if (ind != soci::i_ok) {
-                bestFileId = 0;
-            }
-        }
-    }
-    catch (std::exception& e)
-    {
-        throw SystemError(std::string(__func__) + ": Caught exception " + e.what());
-    }
-    catch (...)
-    {
-        throw SystemError(std::string(__func__) + ": Caught exception " );
-    }
-
-    return bestFileId;
-}
 
 unsigned int MySqlAPI::updateFileStatusReuse(const TransferFile &file, const std::string &status)
 {
@@ -1253,10 +1154,11 @@ boost::tuple<bool, std::string>  MySqlAPI::updateFileTransferStatusInternal(soci
         }
 
         // query for the file state in DB
-        sql << "SELECT file_state FROM t_file WHERE file_id=:fileId AND job_id=:jobId",
+        int fileIndex;
+        sql << "SELECT file_state, file_index FROM t_file WHERE file_id=:fileId AND job_id=:jobId",
             soci::use(fileId),
             soci::use(jobId),
-            soci::into(storedState);
+            soci::into(storedState), soci::into(fileIndex);
 
         bool isStaging = (storedState == "STAGING");
 
@@ -1374,6 +1276,14 @@ boost::tuple<bool, std::string>  MySqlAPI::updateFileTransferStatusInternal(soci
         if (get_affected_rows(sql) == 0) {
             sql.rollback();
             return boost::tuple<bool, std::string>(false, storedState);
+        }
+
+        // For multiple replica jobs, remove from the queue the others
+        if (newState == "READY" && storedState == "CANDIDATE") {
+            sql << "UPDATE t_file SET file_state = 'NOT_USED' "
+                 "WHERE job_id = :jobId AND file_index = :fileIndex AND "
+                 "   file_state = 'CANDIDATE'",
+                 soci::use(jobId), soci::use(fileIndex);
         }
 
         sql.commit();
@@ -2478,7 +2388,7 @@ void MySqlAPI::cancelExpiredJobsForVo(std::vector<std::string>& jobs, int maxTim
             "UPDATE t_file SET "
             "   finish_time = UTC_TIMESTAMP(), "
             "   file_state = 'CANCELED', reason = :reason "
-            "   WHERE job_id = :jobId AND file_state IN ('SUBMITTED', 'NOT_USED', 'STAGING', 'ON_HOLD', 'ON_HOLD_STAGING')",
+            "   WHERE job_id = :jobId AND file_state IN ('SUBMITTED', 'NOT_USED', 'STAGING', 'ON_HOLD', 'ON_HOLD_STAGING', 'CANDIDATE')",
             soci::use(message), soci::use(job_id));
 
         // Cancel jobs using global timeout
