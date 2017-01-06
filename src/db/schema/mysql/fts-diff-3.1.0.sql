@@ -1,0 +1,5 @@
+ALTER TABLE t_file
+    CHANGE file_state file_state ENUM(
+        'STAGING', 'STARTED', 'SUBMITTED', 'READY', 'ACTIVE', 'FINISHED', 'FAILED', 'CANCELED', 'NOT_USED', 'CANDIDATE'
+    ) NOT NULL;
+ 
