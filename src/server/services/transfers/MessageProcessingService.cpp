@@ -109,35 +109,6 @@ void MessageProcessingService::runService()
                 db::DBSingleton::instance().getDBObjectInstance()->transferLogFileVector(messagesLog);
                 messagesLog.clear();
             }
-
-            // update heartbeat and progress vector
-            if (consumer.runConsumerStall(messagesUpdater) != 0)
-            {
-                char buffer[128] = { 0 };
-                FTS3_COMMON_LOGGER_NEWLOG(ERR)<< "Could not get the updater messages:" << strerror_r(errno, buffer, sizeof(buffer)) << commit;
-                continue;
-            }
-
-            if(!messagesUpdater.empty())
-            {
-                std::vector<fts3::events::MessageUpdater>::iterator iterUpdater;
-                for (iterUpdater = messagesUpdater.begin(); iterUpdater != messagesUpdater.end(); ++iterUpdater)
-                {
-                    std::string job = std::string((*iterUpdater).job_id()).substr(0, 36);
-                    FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Process Updater Monitor "
-                        << "\nJob id: " << job
-                        << "\nFile id: " << (*iterUpdater).file_id()
-                        << "\nPid: " << (*iterUpdater).process_id()
-                        << "\nTimestamp: " << (*iterUpdater).timestamp()
-                        << "\nThroughput: " << (*iterUpdater).throughput()
-                        << "\nTransferred: " << (*iterUpdater).transferred()
-                        << commit;
-                    ThreadSafeList::get_instance().updateMsg(*iterUpdater);
-                }
-
-                db::DBSingleton::instance().getDBObjectInstance()->updateFileTransferProgressVector(messagesUpdater);
-                messagesUpdater.clear();
-            }
         }
         catch (const std::exception& e) {
             FTS3_COMMON_LOGGER_NEWLOG(ERR) << e.what() << commit;

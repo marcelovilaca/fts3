@@ -33,7 +33,6 @@ private:
     std::string baseDir;
     std::unique_ptr<DirQ> monitoringQueue;
     std::unique_ptr<DirQ> statusQueue;
-    std::unique_ptr<DirQ> stalledQueue;
     std::unique_ptr<DirQ> logQueue;
     std::unique_ptr<DirQ> deletionQueue;
     std::unique_ptr<DirQ> stagingQueue;

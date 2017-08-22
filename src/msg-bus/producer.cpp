@@ -30,7 +30,7 @@
 
 Producer::Producer(const std::string &baseDir): baseDir(baseDir),
     monitoringQueue(new DirQ(baseDir + "/monitoring")), statusQueue(new DirQ(baseDir + "/status")),
-    stalledQueue(new DirQ(baseDir + "/stalled")), logQueue(new DirQ(baseDir + "/logs")),
+    logQueue(new DirQ(baseDir + "/logs")),
     deletionQueue(new DirQ(baseDir + "/deletion")), stagingQueue(new DirQ(baseDir + "/staging"))
 {
 }

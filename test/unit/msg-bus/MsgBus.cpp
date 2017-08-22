@@ -103,7 +103,6 @@ BOOST_FIXTURE_TEST_CASE (simpleStatus, MsgBusFixture)
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
-    expectZeroMessages<std::vector<MessageUpdater>>(&Consumer::runConsumerStall, consumer);
 
     // First attempt must return the single message
     std::vector<MessageUrlCopy> statuses;
@@ -132,7 +131,6 @@ BOOST_FIXTURE_TEST_CASE (simpleMonitoring, MsgBusFixture)
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
-    expectZeroMessages<std::vector<MessageUpdater>>(&Consumer::runConsumerStall, consumer);
 
     // First attempt must return the single message
     std::vector<std::string> monitoring;
@@ -168,7 +166,6 @@ BOOST_FIXTURE_TEST_CASE (simpleLog, MsgBusFixture)
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
-    expectZeroMessages<std::vector<MessageUpdater>>(&Consumer::runConsumerStall, consumer);
 
     // First attempt must return the single message
     std::map<int, MessageLog> logs;
@@ -203,7 +200,6 @@ BOOST_FIXTURE_TEST_CASE (simpleDeletion, MsgBusFixture)
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
-    expectZeroMessages<std::vector<MessageUpdater>>(&Consumer::runConsumerStall, consumer);
 
     // First attempt must return the single message
     std::vector<MessageBringonline> statuses;
@@ -237,7 +233,6 @@ BOOST_FIXTURE_TEST_CASE (simpleStaging, MsgBusFixture)
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
-    expectZeroMessages<std::vector<MessageUpdater>>(&Consumer::runConsumerStall, consumer);
 
     // First attempt must return the single message
     std::vector<MessageBringonline> statuses;

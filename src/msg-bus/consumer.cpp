@@ -27,7 +27,7 @@
 Consumer::Consumer(const std::string &baseDir, unsigned limit):
     baseDir(baseDir), limit(limit),
     monitoringQueue(new DirQ(baseDir + "/monitoring")), statusQueue(new DirQ(baseDir + "/status")),
-    stalledQueue(new DirQ(baseDir + "/stalled")), logQueue(new DirQ(baseDir + "/logs")),
+    logQueue(new DirQ(baseDir + "/logs")),
     stagingQueue(new DirQ(baseDir + "/staging")), deletionQueue(new DirQ(baseDir + "/deletion"))
 {
 }
@@ -85,12 +85,6 @@ static int genericConsumer(std::unique_ptr<DirQ> &dirq, unsigned limit, std::vec
 int Consumer::runConsumerStatus(std::vector<fts3::events::MessageUrlCopy> &messages)
 {
     return genericConsumer<fts3::events::MessageUrlCopy>(statusQueue, limit, messages);
-}
-
-
-int Consumer::runConsumerStall(std::vector<fts3::events::MessageUpdater> &messages)
-{
-    return genericConsumer<fts3::events::MessageUpdater>(stalledQueue, limit, messages);
 }
 
 
@@ -207,7 +201,6 @@ void Consumer::purgeAll()
 {
     _purge(monitoringQueue.get());
     _purge(statusQueue.get());
-    _purge(stalledQueue.get());
     _purge(logQueue.get());
     _purge(stagingQueue.get());
     _purge(deletionQueue.get());

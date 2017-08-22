@@ -37,7 +37,6 @@ private:
     unsigned limit;
     std::unique_ptr<DirQ> monitoringQueue;
     std::unique_ptr<DirQ> statusQueue;
-    std::unique_ptr<DirQ> stalledQueue;
     std::unique_ptr<DirQ> logQueue;
     std::unique_ptr<DirQ> stagingQueue;
     std::unique_ptr<DirQ> deletionQueue;
@@ -49,8 +48,6 @@ public:
     ~Consumer();
 
     int runConsumerStatus(std::vector<fts3::events::MessageUrlCopy> &messages);
-
-    int runConsumerStall(std::vector<fts3::events::MessageUpdater> &messages);
 
     int runConsumerLog(std::map<int, fts3::events::MessageLog> &messages);
 

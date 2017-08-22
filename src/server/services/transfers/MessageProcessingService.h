@@ -37,7 +37,6 @@ class MessageProcessingService: public BaseService
 private:
     std::vector<fts3::events::MessageUrlCopy> messages;
     std::map<int, fts3::events::MessageLog> messagesLog;
-    std::vector<fts3::events::MessageUpdater> messagesUpdater;
 
     Consumer consumer;
     Producer producer;
