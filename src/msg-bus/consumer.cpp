@@ -82,9 +82,9 @@ static int genericConsumer(std::unique_ptr<DirQ> &dirq, unsigned limit, std::vec
 }
 
 
-int Consumer::runConsumerStatus(std::vector<fts3::events::Message> &messages)
+int Consumer::runConsumerStatus(std::vector<fts3::events::MessageUrlCopy> &messages)
 {
-    return genericConsumer<fts3::events::Message>(statusQueue, limit, messages);
+    return genericConsumer<fts3::events::MessageUrlCopy>(statusQueue, limit, messages);
 }
 
 

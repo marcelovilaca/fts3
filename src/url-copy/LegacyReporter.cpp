@@ -67,7 +67,7 @@ void LegacyReporter::sendTransferStart(const Transfer &transfer, Gfal2TransferPa
     producer.runProducerLog(log);
 
     // Status
-    events::Message status;
+    events::MessageUrlCopy status;
 
     status.set_timestamp(millisecondsSinceEpoch());
     status.set_job_id(transfer.jobId);
@@ -117,7 +117,7 @@ void LegacyReporter::sendTransferStart(const Transfer &transfer, Gfal2TransferPa
 
 void LegacyReporter::sendProtocol(const Transfer &transfer, Gfal2TransferParams &params)
 {
-    events::Message status;
+    events::MessageUrlCopy status;
 
     status.set_job_id(transfer.jobId);
     status.set_file_id(transfer.fileId);
@@ -150,7 +150,7 @@ void LegacyReporter::sendTransferCompleted(const Transfer &transfer, Gfal2Transf
     producer.runProducerLog(log);
 
     // Status
-    events::Message status;
+    events::MessageUrlCopy status;
 
     status.set_timestamp(millisecondsSinceEpoch());
     status.set_job_id(transfer.jobId);

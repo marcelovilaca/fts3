@@ -17,7 +17,7 @@
 #ifndef EVENTS_H
 #define EVENTS_H
 
-#include <msg-bus/events/Message.pb.h>
+#include <msg-bus/events/MessageUrlCopy.pb.h>
 #include <msg-bus/events/MessageBringonline.pb.h>
 #include <msg-bus/events/MessageLog.pb.h>
 #include <msg-bus/events/MessageUpdater.pb.h>

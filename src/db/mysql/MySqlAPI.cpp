@@ -2179,7 +2179,7 @@ void MySqlAPI::setToFailOldQueuedJobs(std::vector<std::string>& jobs)
 }
 
 
-void MySqlAPI::updateProtocol(const std::vector<fts3::events::Message>& messages)
+void MySqlAPI::updateProtocol(const std::vector<fts3::events::MessageUrlCopy>& messages)
 {
     soci::session sql(*connectionPool);
 
@@ -2189,10 +2189,10 @@ void MySqlAPI::updateProtocol(const std::vector<fts3::events::Message>& messages
     std::string params;
 
     soci::statement stmt = (
-                               sql.prepare << "UPDATE t_file set INTERNAL_FILE_PARAMS=:1, FILESIZE=:2 where file_id=:fileId ",
-                               soci::use(params),
-                               soci::use(filesize),
-                               soci::use(fileId));
+        sql.prepare << "UPDATE t_file set INTERNAL_FILE_PARAMS=:1, FILESIZE=:2 where file_id=:fileId ",
+        soci::use(params),
+        soci::use(filesize),
+        soci::use(fileId));
 
     try
     {

@@ -71,7 +71,7 @@ static int writeMessage(std::unique_ptr<DirQ> &dirqHandle, const google::protobu
 }
 
 
-int Producer::runProducerStatus(const fts3::events::Message &msg)
+int Producer::runProducerStatus(const fts3::events::MessageUrlCopy &msg)
 {
     return writeMessage(statusQueue, msg);
 }

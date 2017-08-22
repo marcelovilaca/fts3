@@ -244,7 +244,7 @@ static void failUnschedulable(const std::vector<QueueId> &unschedulable)
     for (auto iterList = voQueues.begin(); iterList != voQueues.end(); ++iterList) {
         const std::list<TransferFile> &transferList = iterList->second;
         for (auto iterTransfer = transferList.begin(); iterTransfer != transferList.end(); ++iterTransfer) {
-            events::Message status;
+            events::MessageUrlCopy status;
 
             status.set_transfer_status("FAILED");
             status.set_timestamp(millisecondsSinceEpoch());

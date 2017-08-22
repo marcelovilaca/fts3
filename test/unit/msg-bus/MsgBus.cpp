@@ -78,7 +78,7 @@ BOOST_FIXTURE_TEST_CASE (simpleStatus, MsgBusFixture)
     Producer producer(TEST_PATH);
     Consumer consumer(TEST_PATH);
 
-    Message original;
+    MessageUrlCopy original;
     original.set_job_id("1906cc40-b915-11e5-9a03-02163e006dd0");
     original.set_transfer_status("FAILED");
     original.set_transfer_message("TEST FAILURE, EVERYTHING IS TERRIBLE");
@@ -106,7 +106,7 @@ BOOST_FIXTURE_TEST_CASE (simpleStatus, MsgBusFixture)
     expectZeroMessages<std::vector<MessageUpdater>>(&Consumer::runConsumerStall, consumer);
 
     // First attempt must return the single message
-    std::vector<Message> statuses;
+    std::vector<MessageUrlCopy> statuses;
     BOOST_CHECK_EQUAL(0, consumer.runConsumerStatus(statuses));
     BOOST_CHECK_EQUAL(1, statuses.size());
     BOOST_CHECK_EQUAL(statuses[0], original);
@@ -128,7 +128,7 @@ BOOST_FIXTURE_TEST_CASE (simpleMonitoring, MsgBusFixture)
     BOOST_CHECK_EQUAL(0, producer.runProducerMonitoring(original));
 
     // Make sure the messages don't get messed up
-    expectZeroMessages<std::vector<Message>>(&Consumer::runConsumerStatus, consumer);
+    expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
@@ -164,7 +164,7 @@ BOOST_FIXTURE_TEST_CASE (simpleLog, MsgBusFixture)
     BOOST_CHECK_EQUAL(0, producer.runProducerLog(original));
 
     // Make sure the messages don't get messed up
-    expectZeroMessages<std::vector<Message>>(&Consumer::runConsumerStatus, consumer);
+    expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
@@ -199,7 +199,7 @@ BOOST_FIXTURE_TEST_CASE (simpleDeletion, MsgBusFixture)
     BOOST_CHECK_EQUAL(0, producer.runProducerDeletions(original));
 
     // Make sure the messages don't get messed up
-    expectZeroMessages<std::vector<Message>>(&Consumer::runConsumerStatus, consumer);
+    expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
@@ -233,7 +233,7 @@ BOOST_FIXTURE_TEST_CASE (simpleStaging, MsgBusFixture)
     BOOST_CHECK_EQUAL(0, producer.runProducerStaging(original));
 
     // Make sure the messages don't get messed up
-    expectZeroMessages<std::vector<Message>>(&Consumer::runConsumerStatus, consumer);
+    expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
     expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);

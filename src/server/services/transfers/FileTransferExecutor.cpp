@@ -178,13 +178,13 @@ void FileTransferExecutor::run(boost::any & ctx)
             }
 
             // Update protocol parameters (specially interested on nostreams)
-            events::Message protoMsg;
+            events::MessageUrlCopy protoMsg;
             protoMsg.set_transfer_status("UPDATE");
             protoMsg.set_file_id(tf.fileId);
             protoMsg.set_buffersize(cmdBuilder.getBuffersize());
             protoMsg.set_nostreams(cmdBuilder.getNoStreams());
             protoMsg.set_timeout(cmdBuilder.getTimeout());
-            db->updateProtocol(std::vector<events::Message>{protoMsg});
+            db->updateProtocol(std::vector<events::MessageUrlCopy>{protoMsg});
 
             // Spawn the fts_url_copy
             bool failed = false;

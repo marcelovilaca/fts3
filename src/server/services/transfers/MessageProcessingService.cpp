@@ -174,7 +174,7 @@ void MessageProcessingService::runService()
 }
 
 
-void MessageProcessingService::updateDatabase(const fts3::events::Message& msg)
+void MessageProcessingService::updateDatabase(const fts3::events::MessageUrlCopy& msg)
 {
     try
     {
@@ -274,7 +274,7 @@ void MessageProcessingService::updateDatabase(const fts3::events::Message& msg)
 }
 
 
-void MessageProcessingService::executeUpdate(const std::vector<fts3::events::Message>& messages)
+void MessageProcessingService::executeUpdate(const std::vector<fts3::events::MessageUrlCopy>& messages)
 {
     fts3::events::MessageUpdater msgUpdater;
 

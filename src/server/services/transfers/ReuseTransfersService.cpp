@@ -338,7 +338,7 @@ void ReuseTransfersService::startUrlCopy(std::string const & job_id, std::list<T
     }
 
     std::map<uint64_t, std::string>::const_iterator iterFileIds;
-    std::vector<events::Message> protoMsgs;
+    std::vector<events::MessageUrlCopy> protoMsgs;
     for (iterFileIds = fileIds.begin(); iterFileIds != fileIds.end(); ++iterFileIds)
     {
         fts3::events::MessageUpdater msg2;
@@ -348,7 +348,7 @@ void ReuseTransfersService::startUrlCopy(std::string const & job_id, std::list<T
         msg2.set_timestamp(millisecondsSinceEpoch());
         ThreadSafeList::get_instance().push_back(msg2);
 
-        events::Message protoMsg;
+        events::MessageUrlCopy protoMsg;
         protoMsg.set_file_id(iterFileIds->first);
         protoMsg.set_transfer_status("UPDATE");
         protoMsg.set_timeout(cmdBuilder.getTimeout());
@@ -378,7 +378,7 @@ static void failUnschedulable(const std::vector<QueueId> &unschedulable)
         while (!queues.empty()) {
             std::pair<std::string, std::list<TransferFile>> &job = queues.front();
             for (auto iterTransfer = job.second.begin(); iterTransfer != job.second.end(); ++iterTransfer) {
-                events::Message status;
+                events::MessageUrlCopy status;
 
                 status.set_transfer_status("FAILED");
                 status.set_timestamp(millisecondsSinceEpoch());

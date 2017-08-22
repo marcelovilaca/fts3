@@ -35,7 +35,7 @@ namespace server {
 class MessageProcessingService: public BaseService
 {
 private:
-    std::vector<fts3::events::Message> messages;
+    std::vector<fts3::events::MessageUrlCopy> messages;
     std::map<int, fts3::events::MessageLog> messagesLog;
     std::vector<fts3::events::MessageUpdater> messagesUpdater;
 
@@ -53,8 +53,8 @@ public:
     virtual void runService();
 
 private:
-    void updateDatabase(const fts3::events::Message& msg);
-    void executeUpdate(const std::vector<fts3::events::Message>& messages);
+    void updateDatabase(const fts3::events::MessageUrlCopy& msg);
+    void executeUpdate(const std::vector<fts3::events::MessageUrlCopy>& messages);
 };
 
 } // end namespace server

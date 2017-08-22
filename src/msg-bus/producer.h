@@ -43,7 +43,7 @@ public:
 
     ~Producer();
 
-    int runProducerStatus(const fts3::events::Message &msg);
+    int runProducerStatus(const fts3::events::MessageUrlCopy &msg);
 
     int runProducerLog(const fts3::events::MessageLog &msg);
 

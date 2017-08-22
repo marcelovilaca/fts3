@@ -1,6 +1,6 @@
 package fts3.events;
 
-message Message {
+message MessageUrlCopy {
     required string job_id = 1;
     required uint64 file_id = 2;
 

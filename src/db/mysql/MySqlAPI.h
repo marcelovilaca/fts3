@@ -167,7 +167,7 @@ public:
     virtual void setToFailOldQueuedJobs(std::vector<std::string>& jobs);
 
     /// Update the protocol parameters used for each transfer
-    virtual void updateProtocol(const std::vector<fts3::events::Message>& tempProtocol);
+    virtual void updateProtocol(const std::vector<fts3::events::MessageUrlCopy>& tempProtocol);
 
     /// Get the state the transfer identified by jobId/fileId
     virtual std::vector<TransferState> getStateOfTransfer(const std::string& jobId, uint64_t fileId);

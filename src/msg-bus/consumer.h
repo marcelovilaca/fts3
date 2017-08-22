@@ -48,7 +48,7 @@ public:
 
     ~Consumer();
 
-    int runConsumerStatus(std::vector<fts3::events::Message> &messages);
+    int runConsumerStatus(std::vector<fts3::events::MessageUrlCopy> &messages);
 
     int runConsumerStall(std::vector<fts3::events::MessageUpdater> &messages);
 
