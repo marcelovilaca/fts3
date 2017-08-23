@@ -27,8 +27,7 @@
 Consumer::Consumer(const std::string &baseDir, unsigned limit):
     baseDir(baseDir), limit(limit),
     monitoringQueue(new DirQ(baseDir + "/monitoring")), statusQueue(new DirQ(baseDir + "/status")),
-    logQueue(new DirQ(baseDir + "/logs")),
-    stagingQueue(new DirQ(baseDir + "/staging")), deletionQueue(new DirQ(baseDir + "/deletion"))
+    logQueue(new DirQ(baseDir + "/logs"))
 {
 }
 
@@ -131,18 +130,6 @@ int Consumer::runConsumerLog(std::map<int, fts3::events::MessageLog> &messages)
 }
 
 
-int Consumer::runConsumerDeletions(std::vector<fts3::events::MessageBringonline> &messages)
-{
-    return genericConsumer<fts3::events::MessageBringonline>(deletionQueue, limit, messages);
-}
-
-
-int Consumer::runConsumerStaging(std::vector<fts3::events::MessageBringonline> &messages)
-{
-    return genericConsumer<fts3::events::MessageBringonline>(stagingQueue, limit, messages);
-}
-
-
 int Consumer::runConsumerMonitoring(std::vector<std::string> &messages)
 {
     std::string content;
@@ -202,6 +189,4 @@ void Consumer::purgeAll()
     _purge(monitoringQueue.get());
     _purge(statusQueue.get());
     _purge(logQueue.get());
-    _purge(stagingQueue.get());
-    _purge(deletionQueue.get());
 }

@@ -30,8 +30,7 @@
 
 Producer::Producer(const std::string &baseDir): baseDir(baseDir),
     monitoringQueue(new DirQ(baseDir + "/monitoring")), statusQueue(new DirQ(baseDir + "/status")),
-    logQueue(new DirQ(baseDir + "/logs")),
-    deletionQueue(new DirQ(baseDir + "/deletion")), stagingQueue(new DirQ(baseDir + "/staging"))
+    logQueue(new DirQ(baseDir + "/logs"))
 {
 }
 
@@ -80,17 +79,6 @@ int Producer::runProducerStatus(const fts3::events::MessageUrlCopy &msg)
 int Producer::runProducerLog(const fts3::events::MessageLog &msg)
 {
     return writeMessage(logQueue, msg);
-}
-
-int Producer::runProducerDeletions(const fts3::events::MessageBringonline &msg)
-{
-    return writeMessage(deletionQueue, msg);
-}
-
-
-int Producer::runProducerStaging(const fts3::events::MessageBringonline &msg)
-{
-    return writeMessage(stagingQueue, msg);
 }
 
 

@@ -38,8 +38,6 @@ private:
     std::unique_ptr<DirQ> monitoringQueue;
     std::unique_ptr<DirQ> statusQueue;
     std::unique_ptr<DirQ> logQueue;
-    std::unique_ptr<DirQ> stagingQueue;
-    std::unique_ptr<DirQ> deletionQueue;
 
 public:
 
@@ -50,10 +48,6 @@ public:
     int runConsumerStatus(std::vector<fts3::events::MessageUrlCopy> &messages);
 
     int runConsumerLog(std::map<int, fts3::events::MessageLog> &messages);
-
-    int runConsumerDeletions(std::vector<fts3::events::MessageBringonline> &messages);
-
-    int runConsumerStaging(std::vector<fts3::events::MessageBringonline> &messages);
 
     int runConsumerMonitoring(std::vector<std::string> &messages);
 

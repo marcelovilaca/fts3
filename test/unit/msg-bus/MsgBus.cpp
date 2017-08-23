@@ -99,8 +99,6 @@ BOOST_FIXTURE_TEST_CASE (simpleStatus, MsgBusFixture)
     BOOST_CHECK_EQUAL(0, producer.runProducerStatus(original));
 
     // Make sure the messages don't get messed up
-    expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
-    expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
 
@@ -128,8 +126,6 @@ BOOST_FIXTURE_TEST_CASE (simpleMonitoring, MsgBusFixture)
 
     // Make sure the messages don't get messed up
     expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
-    expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
-    expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
 
     // First attempt must return the single message
@@ -163,8 +159,6 @@ BOOST_FIXTURE_TEST_CASE (simpleLog, MsgBusFixture)
 
     // Make sure the messages don't get messed up
     expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
-    expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
-    expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
     expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
 
     // First attempt must return the single message
@@ -178,72 +172,6 @@ BOOST_FIXTURE_TEST_CASE (simpleLog, MsgBusFixture)
     logs.clear();
     BOOST_CHECK_EQUAL(0, consumer.runConsumerLog(logs));
     BOOST_CHECK_EQUAL(0, logs.size());
-}
-
-
-BOOST_FIXTURE_TEST_CASE (simpleDeletion, MsgBusFixture)
-{
-    Producer producer(TEST_PATH);
-    Consumer consumer(TEST_PATH);
-
-    MessageBringonline original;
-
-    original.set_job_id("1906cc40-b915-11e5-9a03-02163e006dd0");
-    original.set_file_id(44);
-    original.set_transfer_status("FAILED");
-    original.set_transfer_message("Could not open because of reasons");
-
-    BOOST_CHECK_EQUAL(0, producer.runProducerDeletions(original));
-
-    // Make sure the messages don't get messed up
-    expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
-    expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerStaging, consumer);
-    expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
-    expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
-
-    // First attempt must return the single message
-    std::vector<MessageBringonline> statuses;
-    BOOST_CHECK_EQUAL(0, consumer.runConsumerDeletions(statuses));
-    BOOST_CHECK_EQUAL(1, statuses.size());
-    BOOST_CHECK_EQUAL(statuses[0], original);
-
-    // Second attempt must return empty (already consumed)
-    statuses.clear();
-    BOOST_CHECK_EQUAL(0, consumer.runConsumerDeletions(statuses));
-    BOOST_CHECK_EQUAL(0, statuses.size());
-}
-
-
-BOOST_FIXTURE_TEST_CASE (simpleStaging, MsgBusFixture)
-{
-    Producer producer(TEST_PATH);
-    Consumer consumer(TEST_PATH);
-
-    MessageBringonline original;
-
-    original.set_job_id("1906cc40-b915-11e5-9a03-02163e006dd0");
-    original.set_file_id(44);
-    original.set_transfer_status("FAILED");
-    original.set_transfer_message("Could not open because of reasons");
-
-    BOOST_CHECK_EQUAL(0, producer.runProducerStaging(original));
-
-    // Make sure the messages don't get messed up
-    expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
-    expectZeroMessages<std::vector<MessageBringonline>>(&Consumer::runConsumerDeletions, consumer);
-    expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
-    expectZeroMessages<std::vector<std::string>>(&Consumer::runConsumerMonitoring, consumer);
-
-    // First attempt must return the single message
-    std::vector<MessageBringonline> statuses;
-    BOOST_CHECK_EQUAL(0, consumer.runConsumerStaging(statuses));
-    BOOST_CHECK_EQUAL(1, statuses.size());
-    BOOST_CHECK_EQUAL(statuses[0], original);
-
-    // Second attempt must return empty (already consumed)
-    statuses.clear();
-    BOOST_CHECK_EQUAL(0, consumer.runConsumerStaging(statuses));
-    BOOST_CHECK_EQUAL(0, statuses.size());
 }
 
 

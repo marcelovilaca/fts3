@@ -80,8 +80,6 @@ public:
     /// Destructor
     virtual ~StagingStateUpdater() {}
 
-    using StateUpdater::recover;
-
 private:
     friend class BringOnlineServer;
 
@@ -96,28 +94,6 @@ private:
     void run()
     {
         runImpl(&GenericDbIfce::updateStagingState);
-    }
-
-    void recover(const std::vector<MinFileStatus> &recover)
-    {
-        if (!recover.empty()) {
-            // lock the vector
-            boost::mutex::scoped_lock lock(m);
-            // put the items back
-            updates.insert(updates.end(), recover.begin(), recover.end());
-        }
-
-        fts3::events::MessageBringonline msg;
-        for (auto itFind = recover.begin(); itFind != recover.end(); ++itFind)
-        {
-            msg.set_file_id(itFind->fileId);
-            msg.set_job_id(itFind->jobId);
-            msg.set_transfer_status(itFind->state);
-            msg.set_transfer_message(itFind->reason);
-
-            //store the states into fs to be restored in the next run
-            producer.runProducerStaging(msg);
-        }
     }
 };
 

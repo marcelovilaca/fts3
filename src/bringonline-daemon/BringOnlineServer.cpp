@@ -131,8 +131,6 @@ void BringOnlineServer::wait(void)
 
 void BringOnlineServer::stop(void)
 {
-    stagingStateUpdater.recover();
-    deletionStateUpdater.recover();
     threadpool.interrupt();
     systemThreads.interrupt_all();
 }

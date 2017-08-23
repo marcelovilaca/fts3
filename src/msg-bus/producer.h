@@ -34,8 +34,6 @@ private:
     std::unique_ptr<DirQ> monitoringQueue;
     std::unique_ptr<DirQ> statusQueue;
     std::unique_ptr<DirQ> logQueue;
-    std::unique_ptr<DirQ> deletionQueue;
-    std::unique_ptr<DirQ> stagingQueue;
 
 public:
     Producer(const std::string &baseDir);
@@ -45,10 +43,6 @@ public:
     int runProducerStatus(const fts3::events::MessageUrlCopy &msg);
 
     int runProducerLog(const fts3::events::MessageLog &msg);
-
-    int runProducerDeletions(const fts3::events::MessageBringonline &msg);
-
-    int runProducerStaging(const fts3::events::MessageBringonline &msg);
 
     int runProducerMonitoring(const std::string &serialized);
 };

@@ -80,20 +80,6 @@ public:
         }
     }
 
-    /**
-     *
-     */
-    void recover()
-    {
-        std::vector<MinFileStatus> tmp;
-        // critical section
-        {
-            boost::mutex::scoped_lock lock(m);
-            tmp.swap(updates);
-        }
-        recover(tmp);
-    }
-
     /// Destructor
     virtual ~StateUpdater() { }
 
@@ -103,10 +89,10 @@ protected:
     void runImpl(UpdateStateFunc update_state)
     {
         // temporary vector for DB update
-        std::vector<MinFileStatus> tmp;
 
         while (!boost::this_thread::interruption_requested()) {
             try {
+                std::vector<MinFileStatus> tmp;
                 // wait 10 seconds before checking again
                 boost::this_thread::sleep(boost::posix_time::seconds(10));
                 // critical section
@@ -125,23 +111,16 @@ protected:
             }
             catch (boost::thread_interrupted& ex) {
                 FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Requested interruption of " << operation << fts3::common::commit;
-                recover(tmp);
                 return;
             }
             catch (std::exception& ex) {
                 FTS3_COMMON_LOGGER_NEWLOG(ERR) << ex.what() << fts3::common::commit;
-                recover(tmp);
             }
-            catch(...) //use catch-all, the state must be recovered no matter what
-            {
+            catch(...) {
                 FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Something went really bad, trying to recover!" << fts3::common::commit;
-                recover(tmp);
             }
-            tmp.clear();
         }
     }
-
-    virtual void recover(const std::vector<MinFileStatus> &recover) = 0;
 
     /// a vector containing all the updates (to be send to DB)
     std::vector<MinFileStatus> updates;
