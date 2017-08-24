@@ -56,9 +56,8 @@ static std::string ReplaceNonPrintableCharacters(const std::string &s)
 }
 
 
-MsgIfce::MsgIfce(const std::string &monitoringDir): monitoringDir(monitoringDir)
+MsgIfce::MsgIfce(const std::string &monitoringDir): monitoringQueue(new DirQ(monitoringDir))
 {
-    monitoringQueue.reset(new DirQ(monitoringDir));
 }
 
 
@@ -84,29 +83,6 @@ static void set_metadata(json::Object &json, const std::string &key, const std::
 
     json[key] = json::String(value);
 }
-
-
-int MsgIfce::WriteSerialized(const std::string &serialized)
-{
-    boost::filesystem::path temp = boost::filesystem::unique_path(monitoringDir + "/%%%%-%%%%-%%%%-%%%%");
-
-    std::ofstream fd(temp.native().c_str());
-    if (!fd.good()) {
-        return errno;
-    }
-    fd << serialized;
-    if (!fd.good()) {
-        return errno;
-    }
-    fd.close();
-
-    if (dirq_add_path(*monitoringQueue, temp.native().c_str()) == NULL) {
-        return dirq_get_errcode(*monitoringQueue);
-    }
-
-    return 0;
-}
-
 
 
 std::string MsgIfce::SendTransferStartMessage(const TransferCompleted &tr_started)
@@ -146,7 +122,7 @@ std::string MsgIfce::SendTransferStartMessage(const TransferCompleted &tr_starte
     json::Writer::Write(message, stream);
 
     std::string msgStr = stream.str();
-    int errCode = WriteSerialized(msgStr);
+    int errCode = monitoringQueue->send(msgStr);
     if (errCode == 0) {
         return msgStr;
     }
@@ -243,7 +219,7 @@ std::string MsgIfce::SendTransferFinishMessage(const TransferCompleted &tr_compl
     json::Writer::Write(message, stream);
 
     std::string msgStr = stream.str();
-    int errCode = WriteSerialized(msgStr);
+    int errCode = monitoringQueue->send(msgStr);
     if (errCode == 0) {
         return msgStr;
     }
@@ -287,7 +263,7 @@ std::string MsgIfce::SendTransferStatusChange(const TransferState &tr_state)
     json::Writer::Write(message, stream);
 
     std::string msgStr = stream.str();
-    int errCode = WriteSerialized(msgStr);
+    int errCode = monitoringQueue->send(msgStr);
     if (errCode == 0) {
         return msgStr;
     }
@@ -329,7 +305,7 @@ std::string MsgIfce::SendOptimizer(const OptimizerInfo &opt_info)
     json::Writer::Write(message, stream);
 
     std::string msgStr = stream.str();
-    int errCode = WriteSerialized(msgStr);
+    int errCode = monitoringQueue->send(msgStr);
     if (errCode == 0) {
         return msgStr;
     }

@@ -129,10 +129,7 @@ class MsgIfce
 private:
     friend class MsgOutboundExternal;
 
-    std::string monitoringDir;
     std::unique_ptr<DirQ> monitoringQueue;
-
-    int WriteSerialized(const std::string &serialized);
 
 public:
     MsgIfce(const std::string &monitoringDir);

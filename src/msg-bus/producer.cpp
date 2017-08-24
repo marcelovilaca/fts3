@@ -21,9 +21,7 @@
 #include "producer.h"
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <boost/thread/tss.hpp>
 #include <common/DirQ.h>
-#include "common/Logger.h"
 
 
 Producer::Producer(const std::string &baseDir): baseDir(baseDir),
@@ -38,33 +36,10 @@ Producer::~Producer()
 }
 
 
-boost::thread_specific_ptr<std::istringstream> msgBuffer;
-
-
-static void populateBuffer(const std::string &msg)
-{
-    if (msgBuffer.get() == NULL) {
-        msgBuffer.reset(new std::istringstream());
-    }
-    msgBuffer->clear();
-    msgBuffer->str(msg);
-}
-
-
-static int producerDirqW(dirq_t, char *buffer, size_t length)
-{
-    return msgBuffer->readsome(buffer, length);
-}
-
-
 static int writeMessage(std::unique_ptr<DirQ> &dirqHandle, const google::protobuf::Message &msg)
 {
-    populateBuffer(msg.SerializeAsString());
-    if (dirq_add(*dirqHandle, producerDirqW) == NULL) {
-        return dirq_get_errcode(*dirqHandle);
-    }
-
-    return 0;
+    std::string populateBuffer(msg.SerializeAsString());
+    return dirqHandle->send(populateBuffer);
 }
 
 

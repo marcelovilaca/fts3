@@ -20,9 +20,7 @@
 
 #include "MsgInbound.h"
 
-#include <fstream>
 #include <iostream>
-#include <boost/filesystem.hpp>
 
 #include "common/Logger.h"
 
@@ -31,8 +29,8 @@ extern bool stopThreads;
 namespace fs = boost::filesystem;
 
 
-MsgInbound::MsgInbound(const std::string &fromDir, zmq::context_t &zmqContext):
-    pullFromDirq(new DirQ(fromDir+"/monitoring")),
+MsgInbound::MsgInbound(const std::string &fromDir, zmq::context_t &zmqContext) :
+    pullFromDirq(new DirQ(fromDir + "/monitoring")),
     publishSocket(zmqContext, ZMQ_PUB)
 {
     publishSocket.bind(SUBSCRIBE_SOCKET_ID);
@@ -47,12 +45,12 @@ MsgInbound::~MsgInbound()
 int MsgInbound::consume()
 {
     const char *error = NULL;
-    dirq_clear_error(*pullFromDirq);
+    pullFromDirq->clearError();
 
     unsigned i = 0;
-    for (auto iter = dirq_first(*pullFromDirq); iter != NULL && i < 1000; iter = dirq_next(*pullFromDirq), ++i) {
-        if (dirq_lock(*pullFromDirq, iter, 0) == 0) {
-            const char *path = dirq_get_path(*pullFromDirq, iter);
+    for (auto iter = pullFromDirq->begin(); iter != pullFromDirq->end() && i < 1000; ++iter, ++i) {
+        if (iter.lock()) {
+            const char *path = iter.get();
 
             try {
                 std::string body;
@@ -70,17 +68,17 @@ int MsgInbound::consume()
             }
 
 
-            if (dirq_remove(*pullFromDirq, iter) < 0) {
-                error = dirq_get_errstr(*pullFromDirq);
+            if (!iter.remove()) {
+                error = pullFromDirq->errstr();
                 FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to remove message from queue (" << path << "): "
                                                << error
                                                << fts3::common::commit;
-                dirq_clear_error(*pullFromDirq);
+                pullFromDirq->clearError();
             }
         }
     }
 
-    error = dirq_get_errstr(*pullFromDirq);
+    error = pullFromDirq->errstr();
     if (error) {
         FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to consume messages: " << error << fts3::common::commit;
         return -1;
@@ -107,7 +105,7 @@ void MsgInbound::run()
         catch (...) {
             FTS3_COMMON_LOGGER_LOG(CRIT, "Unexpected exception");
         }
-        dirq_purge(*pullFromDirq.get());
+        pullFromDirq->clearError();
         sleep(1);
     }
     FTS3_COMMON_LOGGER_LOG(INFO, "MsgInbound exiting");

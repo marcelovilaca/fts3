@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef DIRQ_H 
+#ifndef DIRQ_H
 #define DIRQ_H
 
-#include <dirq.h>
+#include <cstring>
+#include <fstream>
 #include <sstream>
-#include "common/Exceptions.h"
+
+#include <dirq.h>
+#include <boost/filesystem.hpp>
+
+#include "Exceptions.h"
+
 
 class DirQ {
 private:
@@ -27,6 +33,42 @@ private:
     std::string path;
 
 public:
+    class Iterator {
+    private:
+        friend class DirQ;
+
+        dirq_t dirq;
+        const char *i;
+
+        Iterator(dirq_t dirq, const char *i): dirq(dirq), i(i) {}
+
+    public:
+        bool operator == (const Iterator &b) {
+            return i == b.i || (i != NULL && b.i != NULL && strcmp(i, b.i));
+        }
+
+        bool operator != (const Iterator &b) {
+            return !(*this == b);
+        }
+
+        void operator ++ () {
+            i = dirq_next(dirq);
+        }
+
+        bool lock() {
+            return dirq_lock(dirq, i, 0) == 0;
+        }
+
+        const char *get() {
+            return dirq_get_path(dirq, i);
+        };
+
+        bool remove() {
+            return dirq_remove(dirq, i) >= 0;
+        }
+    };
+
+
     DirQ(const std::string &path): path(path) {
         dirq = dirq_new(path.c_str());
         if (dirq_get_errcode(dirq)) {
@@ -49,8 +91,44 @@ public:
         return path;
     }
 
-    operator dirq_t () {
-        return dirq;
+    void clearError() {
+        dirq_clear_error(dirq);
+    }
+
+    Iterator begin() {
+        return Iterator(dirq, dirq_first(dirq));
+    }
+
+    Iterator end() {
+        return Iterator(dirq, NULL);
+    }
+
+    const char *errstr() {
+        return dirq_get_errstr(dirq);
+    }
+
+    bool purge() {
+        return dirq_purge(dirq) < 0;
+    }
+
+    int send(std::string const &msg) {
+        boost::filesystem::path temp = boost::filesystem::unique_path(path + "/%%%%-%%%%-%%%%-%%%%");
+
+        std::ofstream fd(temp.native().c_str());
+        if (!fd.good()) {
+            return errno;
+        }
+        fd << msg;
+        if (!fd.good()) {
+            return errno;
+        }
+        fd.close();
+
+        if (dirq_add_path(dirq, temp.native().c_str()) == NULL) {
+            return dirq_get_errcode(dirq);
+        }
+
+        return 0;
     }
 };
 
