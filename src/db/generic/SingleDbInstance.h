@@ -47,8 +47,9 @@ namespace db
  **/
 class DBSingleton: public fts3::common::Singleton<DBSingleton>
 {
+    friend class fts3::common::Singleton<DBSingleton>;
+
 public:
-    DBSingleton();
     ~DBSingleton();
 
     /**
@@ -60,6 +61,8 @@ public:
     }
 
 private:
+    DBSingleton();
+
     DynamicLibraryManager *dlm;
     std::string libraryFileName;
 

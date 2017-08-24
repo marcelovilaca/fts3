@@ -125,8 +125,11 @@ public:
 
 class MsgIfce: public fts3::common::Singleton<MsgIfce>
 {
-public:
+private:
+    friend class fts3::common::Singleton<MsgIfce>;
     MsgIfce();
+
+public:
     ~MsgIfce();
 
     std::string SendTransferStartMessage(Producer &producer, const TransferCompleted &tr_started);

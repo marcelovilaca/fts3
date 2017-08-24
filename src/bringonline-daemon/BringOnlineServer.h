@@ -33,8 +33,9 @@ class PollTask;
 
 class BringOnlineServer: public fts3::common::Singleton<BringOnlineServer>
 {
+    friend class fts3::common::Singleton<BringOnlineServer>;
+
 public:
-    BringOnlineServer();
     virtual ~BringOnlineServer();
 
     void start();
@@ -54,6 +55,8 @@ public:
     }
 
 private:
+    BringOnlineServer();
+
     boost::thread_group systemThreads;
     fts3::common::ThreadPool<Gfal2Task> threadpool;
     WaitingRoom<PollTask> waitingRoom;

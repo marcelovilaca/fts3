@@ -45,10 +45,13 @@ namespace config {
  * when the server starts. It provides read-only singleton access. */
 class ServerConfig: public fts3::common::Singleton<ServerConfig>
 {
-public:
+protected:
+    friend class fts3::common::Singleton<ServerConfig>;
+
     /// Constructor
     ServerConfig();
 
+public:
     /// Destructor
     virtual ~ServerConfig();
 

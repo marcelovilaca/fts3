@@ -35,9 +35,9 @@ namespace server {
 /// Class representing the FTS3 server logic
 class Server: public fts3::common::Singleton<Server>
 {
-public:
-    Server();
+    friend class fts3::common::Singleton<Server>;
 
+public:
     ~Server();
 
     /// Start the services
@@ -50,6 +50,8 @@ public:
     void stop();
 
 private:
+    Server();
+
     boost::thread_group systemThreads;
     std::vector<std::shared_ptr<BaseService>> services;
 
