@@ -272,7 +272,7 @@ void MySqlAPI::recoverFromDeadHosts(soci::session &sql)
             const std::vector<TransferState> files = getStateOfTransferInternal(sql, jobId, fileId);
             for (auto it = files.begin(); it != files.end(); ++it) {
                 TransferState tmp = (*it);
-                MsgIfce::getInstance()->SendTransferStatusChange(producer, tmp);
+                MsgIfce::instance().SendTransferStatusChange(producer, tmp);
             }
         }
     }

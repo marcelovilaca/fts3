@@ -2970,7 +2970,7 @@ void MySqlAPI::updateDeletionsStateInternal(soci::session& sql, const std::vecto
                 for (it = filesMsg.begin(); it != filesMsg.end(); ++it)
                 {
                     TransferState tmp = (*it);
-                    MsgIfce::getInstance()->SendTransferStatusChange(producer, tmp);
+                    MsgIfce::instance().SendTransferStatusChange(producer, tmp);
                 }
             }
             filesMsg.clear();
@@ -3582,7 +3582,7 @@ void MySqlAPI::updateStagingStateInternal(soci::session& sql, const std::vector<
                 for (auto it = filesMsg.begin(); it != filesMsg.end(); ++it)
                 {
                     TransferState tmp = (*it);
-                    MsgIfce::getInstance()->SendTransferStatusChange(producer, tmp);
+                    MsgIfce::instance().SendTransferStatusChange(producer, tmp);
                 }
             }
             filesMsg.clear();

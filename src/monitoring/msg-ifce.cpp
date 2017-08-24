@@ -26,9 +26,6 @@
 #include "msg-ifce.h"
 #include "common/Logger.h"
 
-bool MsgIfce::instanceFlag = false;
-MsgIfce *MsgIfce::single = NULL;
-
 
 static uint64_t getTimestampMillisecs()
 {
@@ -58,19 +55,6 @@ static std::string ReplaceNonPrintableCharacters(const std::string &s)
 }
 
 
-MsgIfce *MsgIfce::getInstance()
-{
-    if (!instanceFlag) {
-        single = new MsgIfce();
-        instanceFlag = true;
-        return single;
-    }
-    else {
-        return single;
-    }
-}
-
-
 MsgIfce::MsgIfce()
 {
 }
@@ -78,7 +62,6 @@ MsgIfce::MsgIfce()
 
 MsgIfce::~MsgIfce()
 {
-    instanceFlag = false;
 }
 
 

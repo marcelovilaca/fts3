@@ -72,7 +72,7 @@ public:
         msg.connections = decision;
         msg.rationale = rationale;
 
-        MsgIfce::getInstance()->SendOptimizer(msgProducer, msg);
+        MsgIfce::instance().SendOptimizer(msgProducer, msg);
     }
 };
 

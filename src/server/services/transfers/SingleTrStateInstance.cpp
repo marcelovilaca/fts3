@@ -66,7 +66,7 @@ void SingleTrStateInstance::sendStateMessage(const std::string& jobId, uint64_t 
         files = db::DBSingleton::instance().getDBObjectInstance()->getStateOfTransfer(jobId, fileId);
         if (!files.empty()) {
             for (auto it = files.begin(); it != files.end(); ++it) {
-                MsgIfce::getInstance()->SendTransferStatusChange(*producer, *it);
+                MsgIfce::instance().SendTransferStatusChange(*producer, *it);
             }
         }
     }

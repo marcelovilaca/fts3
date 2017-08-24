@@ -23,6 +23,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <common/Singleton.h>
 #include "msg-bus/producer.h"
 #include "db/generic/TransferState.h"
 
@@ -122,21 +123,16 @@ public:
     std::string rationale;
 };
 
-class MsgIfce
+class MsgIfce: public fts3::common::Singleton<MsgIfce>
 {
-private:
-    static bool instanceFlag;
-    static MsgIfce *single;
-    MsgIfce(); /*private constructor*/
-
 public:
+    MsgIfce();
+    ~MsgIfce();
+
     std::string SendTransferStartMessage(Producer &producer, const TransferCompleted &tr_started);
     std::string SendTransferFinishMessage(Producer &producer, const TransferCompleted &tr_completed);
     std::string SendTransferStatusChange(Producer &producer, const TransferState &tr_state);
     std::string SendOptimizer(Producer &producer, const OptimizerInfo &opt_info);
-
-    static MsgIfce * getInstance();
-    ~MsgIfce();
 };
 
 #endif
