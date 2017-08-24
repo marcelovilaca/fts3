@@ -21,27 +21,56 @@
 #include <cstdlib>
 #include <activemq/library/ActiveMQCPP.h>
 #include <common/PidTools.h>
+#include <common/panic.h>
+#include <signal.h>
 
-#include "common/ConcurrentQueue.h"
 #include "common/DaemonTools.h"
 #include "common/Exceptions.h"
 #include "common/Logger.h"
 #include "config/ServerConfig.h"
 
 #include "BrokerConfig.h"
-#include "MsgPipe.h"
-#include "MsgProducer.h"
+#include "MsgInbound.h"
+#include "MsgOutboundExternal.h"
 
 using namespace fts3::common;
 using namespace fts3::config;
+
+bool stopThreads = false;
+
+
+static void shutdown_callback(int signum, void*)
+{
+    FTS3_COMMON_LOGGER_NEWLOG(WARNING) << "Caught signal " << signum
+                                       << " (" << strsignal(signum) << ")" << commit;
+    FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Future signals will be ignored!" << commit;
+    FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Messaging server stopping" << commit;
+    stopThreads = true;
+
+    // Some require traceback
+    switch (signum)
+    {
+        case SIGABRT: case SIGSEGV: case SIGILL:
+        case SIGFPE: case SIGBUS: case SIGTRAP:
+        case SIGSYS:
+            FTS3_COMMON_LOGGER_NEWLOG(CRIT)<< "Stack trace: \n"
+               << panic::stack_dump(panic::stack_backtrace, panic::stack_backtrace_size)
+               << commit;
+            break;
+        default:
+            break;
+    }
+}
+
 
 
 static void DoServer(bool isDaemon) throw()
 {
     try {
         BrokerConfig config(ServerConfig::instance().get<std::string>("MonitoringConfigFile"));
+        const std::string monitoringMsgDir = ServerConfig::instance().get<std::string>("MessagingDirectory");
+        const std::string logFile = config.GetLogFilePath();
 
-        std::string logFile = config.GetLogFilePath();
         if (isDaemon) {
             if (theLogger().redirect(logFile, logFile) != 0) {
                 FTS3_COMMON_LOGGER_LOG(CRIT, "Could not open the log file");
@@ -49,31 +78,30 @@ static void DoServer(bool isDaemon) throw()
             }
         }
 
+        panic::setup_signal_handlers(shutdown_callback, NULL);
+
         theLogger().setLogLevel(Logger::getLogLevel(ServerConfig::instance().get<std::string>("LogLevel")));
 
         activemq::library::ActiveMQCPP::initializeLibrary();
 
-        //initialize here to avoid race conditions
-        ConcurrentQueue::getInstance();
+        // Shared ZeroMQ context
+        zmq::context_t zmqContext(0);
 
-        MsgPipe pipeMsg1(ServerConfig::instance().get<std::string>("MessagingDirectory"));
-        MsgProducer producer(ServerConfig::instance().get<std::string>("MessagingDirectory"), config);
+        MsgInbound pipeMsg(monitoringMsgDir, zmqContext);
+        MsgOutboundExternal stompProducer(zmqContext, config);
 
-        // Start the pipe thread.
-        decaf::lang::Thread pipeThread(&pipeMsg1);
-        pipeThread.start();
-
-        // Start the producer thread.
-        decaf::lang::Thread producerThread(&producer);
-        producerThread.start();
+        boost::thread_group threads;
+        threads.add_thread(
+            new boost::thread(boost::bind(&MsgInbound::run, &pipeMsg))
+        );
+        threads.add_thread(
+            new boost::thread(boost::bind(&MsgOutboundExternal::run, &stompProducer))
+        );
 
         FTS3_COMMON_LOGGER_LOG(INFO, "Threads started");
 
-        // Wait for the threads to complete.
-        pipeThread.join();
-        producerThread.join();
-
-        activemq::library::ActiveMQCPP::shutdownLibrary();
+        threads.join_all();
+        FTS3_COMMON_LOGGER_LOG(INFO, "Threads exited");
     }
     catch (cms::CMSException& e) {
         std::string errorMessage = "PROCESS_ERROR " + e.getStackTraceString();
@@ -86,6 +114,8 @@ static void DoServer(bool isDaemon) throw()
     catch (...) {
         FTS3_COMMON_LOGGER_LOG(ERR, "PROCESS_ERROR Unknown exception");
     }
+
+    activemq::library::ActiveMQCPP::shutdownLibrary();
 }
 
 

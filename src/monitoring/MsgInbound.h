@@ -26,17 +26,22 @@
 #include <memory>
 #include <vector>
 #include <common/DirQ.h>
+#include <zmq.hpp>
+
+#define SUBSCRIBE_SOCKET_ID "inproc://inbound"
 
 
-class MsgPipe : public decaf::lang::Runnable
+class MsgInbound : public decaf::lang::Runnable
 {
 private:
-    std::unique_ptr<DirQ> monitoringQueue;
-    int consume(std::vector<std::string> &messages);
+    std::unique_ptr<DirQ> pullFromDirq;
+    zmq::socket_t publishSocket;
+
+    int consume();
 
 public:
-    MsgPipe(const std::string &baseDir);
-    virtual ~MsgPipe();
+    MsgInbound(const std::string &fromDir, zmq::context_t &zmqContext);
+    virtual ~MsgInbound();
     virtual void run();
 };
 

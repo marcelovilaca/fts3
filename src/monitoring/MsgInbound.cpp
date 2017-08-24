@@ -18,69 +18,50 @@
  * limitations under the License.
  */
 
-#include "MsgPipe.h"
+#include "MsgInbound.h"
 
 #include <fstream>
-#include <signal.h>
 #include <iostream>
 #include <boost/filesystem.hpp>
 
 #include "common/Logger.h"
-#include "common/ConcurrentQueue.h"
 
 extern bool stopThreads;
-static bool signalReceived = false;
 
-using fts3::common::ConcurrentQueue;
 namespace fs = boost::filesystem;
 
-void handler(int)
+
+MsgInbound::MsgInbound(const std::string &fromDir, zmq::context_t &zmqContext):
+    pullFromDirq(new DirQ(fromDir+"/monitoring")),
+    publishSocket(zmqContext, ZMQ_PUB)
 {
-    if (!signalReceived) {
-        signalReceived = true;
-        stopThreads = true;
-        sleep(5);
-        exit(0);
-    }
+    publishSocket.bind(SUBSCRIBE_SOCKET_ID);
 }
 
 
-MsgPipe::MsgPipe(const std::string &baseDir):
-    monitoringQueue(new DirQ(baseDir+"/monitoring"))
-{
-    //register sig handler to cleanup resources upon exiting
-    signal(SIGFPE, handler);
-    signal(SIGILL, handler);
-    signal(SIGSEGV, handler);
-    signal(SIGBUS, handler);
-    signal(SIGABRT, handler);
-    signal(SIGTERM, handler);
-    signal(SIGINT, handler);
-    signal(SIGQUIT, handler);
-}
-
-
-MsgPipe::~MsgPipe()
+MsgInbound::~MsgInbound()
 {
 }
 
 
-int MsgPipe::consume(std::vector<std::string> &messages)
+int MsgInbound::consume()
 {
-    std::string content;
-
     const char *error = NULL;
-    dirq_clear_error(*monitoringQueue);
+    dirq_clear_error(*pullFromDirq);
 
     unsigned i = 0;
-    for (auto iter = dirq_first(*monitoringQueue); iter != NULL && i < 1000; iter = dirq_next(*monitoringQueue), ++i) {
-        if (dirq_lock(*monitoringQueue, iter, 0) == 0) {
-            const char *path = dirq_get_path(*monitoringQueue, iter);
+    for (auto iter = dirq_first(*pullFromDirq); iter != NULL && i < 1000; iter = dirq_next(*pullFromDirq), ++i) {
+        if (dirq_lock(*pullFromDirq, iter, 0) == 0) {
+            const char *path = dirq_get_path(*pullFromDirq, iter);
 
             try {
+                std::string body;
                 std::ifstream fstream(path);
-                content.assign((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>());
-                messages.emplace_back(content);
+                body.assign((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>());
+
+                zmq::message_t msg(body.size());
+                memcpy(msg.data(), body.data(), body.size());
+                publishSocket.send(msg, 0);
             }
             catch (const std::exception &ex) {
                 FTS3_COMMON_LOGGER_NEWLOG(ERR)
@@ -89,17 +70,17 @@ int MsgPipe::consume(std::vector<std::string> &messages)
             }
 
 
-            if (dirq_remove(*monitoringQueue, iter) < 0) {
-                error = dirq_get_errstr(*monitoringQueue);
+            if (dirq_remove(*pullFromDirq, iter) < 0) {
+                error = dirq_get_errstr(*pullFromDirq);
                 FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to remove message from queue (" << path << "): "
                                                << error
                                                << fts3::common::commit;
-                dirq_clear_error(*monitoringQueue);
+                dirq_clear_error(*pullFromDirq);
             }
         }
     }
 
-    error = dirq_get_errstr(*monitoringQueue);
+    error = dirq_get_errstr(*pullFromDirq);
     if (error) {
         FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to consume messages: " << error << fts3::common::commit;
         return -1;
@@ -109,23 +90,16 @@ int MsgPipe::consume(std::vector<std::string> &messages)
 }
 
 
-void MsgPipe::run()
+void MsgInbound::run()
 {
-    std::vector<std::string> messages;
-
     while (stopThreads == false) {
         try {
-            int returnValue = consume(messages);
+            int returnValue = consume();
             if (returnValue != 0) {
                 std::ostringstream errorMessage;
                 errorMessage << "runConsumerMonitoring returned " << returnValue;
                 FTS3_COMMON_LOGGER_LOG(ERR, errorMessage.str());
             }
-
-            for (auto iter = messages.begin(); iter != messages.end(); ++iter) {
-                ConcurrentQueue::getInstance()->push(*iter);
-            }
-            messages.clear();
         }
         catch (const fs::filesystem_error &ex) {
             FTS3_COMMON_LOGGER_LOG(ERR, ex.what());
@@ -133,6 +107,8 @@ void MsgPipe::run()
         catch (...) {
             FTS3_COMMON_LOGGER_LOG(CRIT, "Unexpected exception");
         }
+        dirq_purge(*pullFromDirq.get());
         sleep(1);
     }
+    FTS3_COMMON_LOGGER_LOG(INFO, "MsgInbound exiting");
 }

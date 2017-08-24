@@ -36,11 +36,12 @@
 #include <cms/MessageListener.h>
 #include <cms/ExceptionListener.h>
 #include <cms/MessageListener.h>
+#include <zmq.hpp>
 #include "BrokerConfig.h"
 #include "msg-ifce.h"
 
 
-class MsgProducer : public decaf::lang::Runnable, public cms::ExceptionListener
+class MsgOutboundExternal : public decaf::lang::Runnable, public cms::ExceptionListener
 {
 private:
 
@@ -59,15 +60,15 @@ private:
 
     std::string FTSEndpoint;
     const BrokerConfig& brokerConfig;
-    MsgIfce msgIfce;
+    zmq::socket_t subscribeSocket;
 
     bool getConnection();
     void cleanup();
 
 public:
-    MsgProducer(const std::string &localBaseDir, const BrokerConfig& config);
-    virtual ~MsgProducer();
-    void sendMessage(const std::string &rawMsg);
+    MsgOutboundExternal(zmq::context_t &zmqContext, const BrokerConfig& config);
+    virtual ~MsgOutboundExternal();
+    void routeMessage(zmq::message_t &msg);
     virtual void run();
     virtual void onException(const cms::CMSException& ex AMQCPP_UNUSED);
     bool connected;

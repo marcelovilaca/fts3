@@ -19,17 +19,17 @@
  */
 
 #include <memory>
-#include "MsgProducer.h"
+#include "MsgOutboundExternal.h"
 #include "common/Logger.h"
 
 #include "config/ServerConfig.h"
-#include "common/ConcurrentQueue.h"
 #include "common/Exceptions.h"
 
 #include <cajun/json/reader.h>
 #include <cajun/json/writer.h>
 #include <decaf/lang/System.h>
 #include "msg-ifce.h"
+#include "MsgInbound.h"
 
 using namespace fts3::config;
 
@@ -44,14 +44,13 @@ using namespace fts3::config;
 // compatibility until people stops dropping the last byte.
 static const char EOT = ' ';
 
-
-bool stopThreads = false;
+extern bool stopThreads;
 
 using namespace fts3::common;
 
 
-MsgProducer::MsgProducer(const std::string &localBaseDir, const BrokerConfig& config):
-    brokerConfig(config), msgIfce(localBaseDir + "/monitoring")
+MsgOutboundExternal::MsgOutboundExternal(zmq::context_t &zmqContext, const BrokerConfig& config):
+    brokerConfig(config), subscribeSocket(zmqContext, ZMQ_SUB)
 {
     connection = NULL;
     session = NULL;
@@ -65,22 +64,27 @@ MsgProducer::MsgProducer(const std::string &localBaseDir, const BrokerConfig& co
     destination_optimizer = NULL;
     FTSEndpoint = fts3::config::ServerConfig::instance().get<std::string>("Alias");
     connected = false;
+
+    subscribeSocket.connect(SUBSCRIBE_SOCKET_ID);
+    subscribeSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
 }
 
-MsgProducer::~MsgProducer()
+MsgOutboundExternal::~MsgOutboundExternal()
 {
     cleanup();
 }
 
 
-void MsgProducer::sendMessage(const std::string &rawMsg)
+void MsgOutboundExternal::routeMessage(zmq::message_t &rawMsg)
 {
-    FTS3_COMMON_LOGGER_NEWLOG(DEBUG) << rawMsg << commit;
+    const std::string body(static_cast<const char*>(rawMsg.data()), rawMsg.size());
 
-    std::string type = rawMsg.substr(0, 2);
+    FTS3_COMMON_LOGGER_NEWLOG(DEBUG) << body << commit;
+
+    std::string type = body.substr(0, 2);
 
     // Modify on the fly to add the endpoint
-    std::istringstream input(rawMsg.substr(2));
+    std::istringstream input(body.substr(2));
     json::Object msg;
     json::Reader::Read(msg, input);
 
@@ -149,7 +153,7 @@ void MsgProducer::sendMessage(const std::string &rawMsg)
 }
 
 
-bool MsgProducer::getConnection()
+bool MsgOutboundExternal::getConnection()
 {
     try {
         // Set properties for SSL, if enabled
@@ -245,25 +249,16 @@ bool MsgProducer::getConnection()
 
 // If something bad happens you see it here as this class is also been
 // registered as an ExceptionListener with the connection.
-void MsgProducer::onException(const cms::CMSException &ex AMQCPP_UNUSED)
+void MsgOutboundExternal::onException(const cms::CMSException &ex AMQCPP_UNUSED)
 {
     FTS3_COMMON_LOGGER_LOG(ERR, ex.getMessage());
-    stopThreads = true;
-    std::queue<std::string> myQueue = ConcurrentQueue::getInstance()->theQueue;
-    while (!myQueue.empty()) {
-        std::string msg = myQueue.front();
-        myQueue.pop();
-        msgIfce.WriteSerialized(msg);
-    }
     connected = false;
     sleep(5);
 }
 
 
-void MsgProducer::run()
+void MsgOutboundExternal::run()
 {
-    std::string msg("");
-
     while (stopThreads == false) {
         try {
             if (!connected) {
@@ -280,35 +275,36 @@ void MsgProducer::run()
             }
 
             //send messages
-            msg = ConcurrentQueue::getInstance()->pop();
-            if (!msg.empty()) {
-                sendMessage(msg);
+            zmq::message_t msg;
+            while (subscribeSocket.recv(&msg, ZMQ_NOBLOCK)) {
+                if (msg.size()) {
+                    routeMessage(msg);
+                }
             }
+
             usleep(100);
         }
         catch (cms::CMSException &e) {
-            msgIfce.WriteSerialized(msg);
             FTS3_COMMON_LOGGER_LOG(ERR, e.getMessage());
             connected = false;
             sleep(5);
         }
         catch (std::exception &e) {
-            msgIfce.WriteSerialized(msg);
             FTS3_COMMON_LOGGER_LOG(ERR, e.what());
             connected = false;
             sleep(5);
         }
         catch (...) {
-            msgIfce.WriteSerialized(msg);
             FTS3_COMMON_LOGGER_LOG(CRIT, "Unexpected exception");
             connected = false;
             sleep(5);
         }
     }
+    FTS3_COMMON_LOGGER_LOG(INFO, "MsgOutboundExternal exiting");
 }
 
 
-void MsgProducer::cleanup()
+void MsgOutboundExternal::cleanup()
 {
     delete destination_transfer_started;
     destination_transfer_started = NULL;

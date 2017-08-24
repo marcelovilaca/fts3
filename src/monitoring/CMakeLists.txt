@@ -46,8 +46,8 @@ set_target_properties(fts_msg_ifce PROPERTIES
 # fts_msg_bulk binary
 set(fts_msg_bulk_SOURCES
     msg-bulk-send.cpp
-    MsgPipe.cpp
-    MsgProducer.cpp
+        MsgInbound.cpp
+        MsgOutboundExternal.cpp
 	BrokerConfig.cpp
 )
 
@@ -59,6 +59,7 @@ target_link_libraries(fts_msg_bulk
 	fts_msg_ifce
     rt
     dirq
+    zmq
     ${Boost_LIBRARIES}
 )
 
