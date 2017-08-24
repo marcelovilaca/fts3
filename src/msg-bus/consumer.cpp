@@ -19,9 +19,9 @@
  */
 
 #include <fstream>
-#include "common/Logger.h"
+#include <common/DirQ.h>
+#include <common/Logger.h>
 #include "consumer.h"
-#include "DirQ.h"
 
 
 Consumer::Consumer(const std::string &baseDir, unsigned limit):
@@ -121,50 +121,6 @@ int Consumer::runConsumerLog(std::map<int, fts3::events::MessageLog> &messages)
     }
 
     error = dirq_get_errstr(*logQueue);
-    if (error) {
-        FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to consume messages: " << error << fts3::common::commit;
-        return -1;
-    }
-
-    return 0;
-}
-
-
-int Consumer::runConsumerMonitoring(std::vector<std::string> &messages)
-{
-    std::string content;
-
-    const char *error = NULL;
-    dirq_clear_error(*monitoringQueue);
-
-    unsigned i = 0;
-    for (auto iter = dirq_first(*monitoringQueue); iter != NULL && i < limit; iter = dirq_next(*monitoringQueue), ++i) {
-        if (dirq_lock(*monitoringQueue, iter, 0) == 0) {
-            const char *path = dirq_get_path(*monitoringQueue, iter);
-
-            try {
-                std::ifstream fstream(path);
-                content.assign((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>());
-                messages.emplace_back(content);
-            }
-            catch (const std::exception &ex) {
-                FTS3_COMMON_LOGGER_NEWLOG(ERR)
-                << "Could not load message from " << path << " (" << ex.what() << ")"
-                << fts3::common::commit;
-            }
-
-
-            if (dirq_remove(*monitoringQueue, iter) < 0) {
-                error = dirq_get_errstr(*monitoringQueue);
-                FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to remove message from queue (" << path << "): "
-                    << error
-                    << fts3::common::commit;
-                dirq_clear_error(*monitoringQueue);
-            }
-        }
-    }
-
-    error = dirq_get_errstr(*monitoringQueue);
     if (error) {
         FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to consume messages: " << error << fts3::common::commit;
         return -1;

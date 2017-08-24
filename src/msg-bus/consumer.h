@@ -49,8 +49,6 @@ public:
 
     int runConsumerLog(std::map<int, fts3::events::MessageLog> &messages);
 
-    int runConsumerMonitoring(std::vector<std::string> &messages);
-
     void purgeAll();
 };
 

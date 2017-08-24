@@ -21,15 +21,13 @@
 #include "producer.h"
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <glib.h>
 #include <boost/thread/tss.hpp>
-#include "DirQ.h"
-
+#include <common/DirQ.h>
 #include "common/Logger.h"
 
 
 Producer::Producer(const std::string &baseDir): baseDir(baseDir),
-    monitoringQueue(new DirQ(baseDir + "/monitoring")), statusQueue(new DirQ(baseDir + "/status")),
+    statusQueue(new DirQ(baseDir + "/status")),
     logQueue(new DirQ(baseDir + "/logs"))
 {
 }
@@ -79,15 +77,4 @@ int Producer::runProducerStatus(const fts3::events::MessageUrlCopy &msg)
 int Producer::runProducerLog(const fts3::events::MessageLog &msg)
 {
     return writeMessage(logQueue, msg);
-}
-
-
-int Producer::runProducerMonitoring(const std::string &serialized)
-{
-    populateBuffer(serialized);
-    if (dirq_add(*monitoringQueue, producerDirqW) == NULL) {
-        return dirq_get_errcode(*monitoringQueue);
-    }
-
-    return 0;
 }

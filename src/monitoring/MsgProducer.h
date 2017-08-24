@@ -36,8 +36,8 @@
 #include <cms/MessageListener.h>
 #include <cms/ExceptionListener.h>
 #include <cms/MessageListener.h>
-#include "msg-bus/producer.h"
 #include "BrokerConfig.h"
+#include "msg-ifce.h"
 
 
 class MsgProducer : public decaf::lang::Runnable, public cms::ExceptionListener
@@ -59,17 +59,16 @@ private:
 
     std::string FTSEndpoint;
     const BrokerConfig& brokerConfig;
+    MsgIfce msgIfce;
 
     bool getConnection();
+    void cleanup();
 
 public:
     MsgProducer(const std::string &localBaseDir, const BrokerConfig& config);
     virtual ~MsgProducer();
     void sendMessage(const std::string &rawMsg);
     virtual void run();
-    void cleanup();
     virtual void onException(const cms::CMSException& ex AMQCPP_UNUSED);
     bool connected;
-
-    Producer localProducer;
 };

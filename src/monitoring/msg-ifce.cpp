@@ -23,8 +23,9 @@
 #include <fstream>
 #include <cajun/json/elements.h>
 #include <cajun/json/writer.h>
+#include <config/ServerConfig.h>
+#include <boost/filesystem/operations.hpp>
 #include "msg-ifce.h"
-#include "common/Logger.h"
 
 
 static uint64_t getTimestampMillisecs()
@@ -55,8 +56,9 @@ static std::string ReplaceNonPrintableCharacters(const std::string &s)
 }
 
 
-MsgIfce::MsgIfce()
+MsgIfce::MsgIfce(const std::string &monitoringDir): monitoringDir(monitoringDir)
 {
+    monitoringQueue.reset(new DirQ(monitoringDir));
 }
 
 
@@ -84,7 +86,30 @@ static void set_metadata(json::Object &json, const std::string &key, const std::
 }
 
 
-std::string MsgIfce::SendTransferStartMessage(Producer &producer, const TransferCompleted &tr_started)
+int MsgIfce::WriteSerialized(const std::string &serialized)
+{
+    boost::filesystem::path temp = boost::filesystem::unique_path(monitoringDir + "/%%%%-%%%%-%%%%-%%%%");
+
+    std::ofstream fd(temp.native().c_str());
+    if (!fd.good()) {
+        return errno;
+    }
+    fd << serialized;
+    if (!fd.good()) {
+        return errno;
+    }
+    fd.close();
+
+    if (dirq_add_path(*monitoringQueue, temp.native().c_str()) == NULL) {
+        return dirq_get_errcode(*monitoringQueue);
+    }
+
+    return 0;
+}
+
+
+
+std::string MsgIfce::SendTransferStartMessage(const TransferCompleted &tr_started)
 {
     json::Object message;
 
@@ -121,7 +146,7 @@ std::string MsgIfce::SendTransferStartMessage(Producer &producer, const Transfer
     json::Writer::Write(message, stream);
 
     std::string msgStr = stream.str();
-    int errCode = producer.runProducerMonitoring(msgStr);
+    int errCode = WriteSerialized(msgStr);
     if (errCode == 0) {
         return msgStr;
     }
@@ -132,7 +157,7 @@ std::string MsgIfce::SendTransferStartMessage(Producer &producer, const Transfer
 }
 
 
-std::string MsgIfce::SendTransferFinishMessage(Producer &producer, const TransferCompleted &tr_completed)
+std::string MsgIfce::SendTransferFinishMessage(const TransferCompleted &tr_completed)
 {
     json::Object message;
 
@@ -218,7 +243,7 @@ std::string MsgIfce::SendTransferFinishMessage(Producer &producer, const Transfe
     json::Writer::Write(message, stream);
 
     std::string msgStr = stream.str();
-    int errCode = producer.runProducerMonitoring(msgStr);
+    int errCode = WriteSerialized(msgStr);
     if (errCode == 0) {
         return msgStr;
     }
@@ -229,7 +254,7 @@ std::string MsgIfce::SendTransferFinishMessage(Producer &producer, const Transfe
 }
 
 
-std::string MsgIfce::SendTransferStatusChange(Producer &producer, const TransferState &tr_state)
+std::string MsgIfce::SendTransferStatusChange(const TransferState &tr_state)
 {
     json::Object message;
 
@@ -262,7 +287,7 @@ std::string MsgIfce::SendTransferStatusChange(Producer &producer, const Transfer
     json::Writer::Write(message, stream);
 
     std::string msgStr = stream.str();
-    int errCode = producer.runProducerMonitoring(msgStr);
+    int errCode = WriteSerialized(msgStr);
     if (errCode == 0) {
         return msgStr;
     }
@@ -273,7 +298,7 @@ std::string MsgIfce::SendTransferStatusChange(Producer &producer, const Transfer
 }
 
 
-std::string MsgIfce::SendOptimizer(Producer &producer, const OptimizerInfo &opt_info)
+std::string MsgIfce::SendOptimizer(const OptimizerInfo &opt_info)
 {
     json::Object message;
 
@@ -304,7 +329,7 @@ std::string MsgIfce::SendOptimizer(Producer &producer, const OptimizerInfo &opt_
     json::Writer::Write(message, stream);
 
     std::string msgStr = stream.str();
-    int errCode = producer.runProducerMonitoring(msgStr);
+    int errCode = WriteSerialized(msgStr);
     if (errCode == 0) {
         return msgStr;
     }

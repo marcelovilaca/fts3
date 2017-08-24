@@ -70,7 +70,7 @@ private:
     std::string ftsAlias;
 
     bool monitoringMessages;
-    boost::thread_specific_ptr<Producer> producer;
+    boost::thread_specific_ptr<MsgIfce> msgIfce;
 };
 
 } // end namespace server

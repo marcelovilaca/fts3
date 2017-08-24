@@ -29,6 +29,7 @@
 #include <cajun/json/reader.h>
 #include <cajun/json/writer.h>
 #include <decaf/lang/System.h>
+#include "msg-ifce.h"
 
 using namespace fts3::config;
 
@@ -50,7 +51,7 @@ using namespace fts3::common;
 
 
 MsgProducer::MsgProducer(const std::string &localBaseDir, const BrokerConfig& config):
-    brokerConfig(config), localProducer(localBaseDir)
+    brokerConfig(config), msgIfce(localBaseDir + "/monitoring")
 {
     connection = NULL;
     session = NULL;
@@ -68,6 +69,7 @@ MsgProducer::MsgProducer(const std::string &localBaseDir, const BrokerConfig& co
 
 MsgProducer::~MsgProducer()
 {
+    cleanup();
 }
 
 
@@ -251,7 +253,7 @@ void MsgProducer::onException(const cms::CMSException &ex AMQCPP_UNUSED)
     while (!myQueue.empty()) {
         std::string msg = myQueue.front();
         myQueue.pop();
-        localProducer.runProducerMonitoring(msg);
+        msgIfce.WriteSerialized(msg);
     }
     connected = false;
     sleep(5);
@@ -285,19 +287,19 @@ void MsgProducer::run()
             usleep(100);
         }
         catch (cms::CMSException &e) {
-            localProducer.runProducerMonitoring(msg);
+            msgIfce.WriteSerialized(msg);
             FTS3_COMMON_LOGGER_LOG(ERR, e.getMessage());
             connected = false;
             sleep(5);
         }
         catch (std::exception &e) {
-            localProducer.runProducerMonitoring(msg);
+            msgIfce.WriteSerialized(msg);
             FTS3_COMMON_LOGGER_LOG(ERR, e.what());
             connected = false;
             sleep(5);
         }
         catch (...) {
-            localProducer.runProducerMonitoring(msg);
+            msgIfce.WriteSerialized(msg);
             FTS3_COMMON_LOGGER_LOG(CRIT, "Unexpected exception");
             connected = false;
             sleep(5);

@@ -19,13 +19,14 @@
  */
 
 #ifndef MSG_IFCE_H
+#define MSG_IFCE_H
 
 #include <iostream>
 #include <vector>
 #include <sstream>
-#include <common/Singleton.h>
-#include "msg-bus/producer.h"
-#include "db/generic/TransferState.h"
+#include <db/generic/TransferState.h>
+#include <common/DirQ.h>
+#include <memory>
 
 /**
  * This is the external interface of the FTS messaging library.
@@ -123,19 +124,24 @@ public:
     std::string rationale;
 };
 
-class MsgIfce: public fts3::common::Singleton<MsgIfce>
+class MsgIfce
 {
 private:
-    friend class fts3::common::Singleton<MsgIfce>;
-    MsgIfce();
+    friend class MsgProducer;
+
+    std::string monitoringDir;
+    std::unique_ptr<DirQ> monitoringQueue;
+
+    int WriteSerialized(const std::string &serialized);
 
 public:
+    MsgIfce(const std::string &monitoringDir);
     ~MsgIfce();
 
-    std::string SendTransferStartMessage(Producer &producer, const TransferCompleted &tr_started);
-    std::string SendTransferFinishMessage(Producer &producer, const TransferCompleted &tr_completed);
-    std::string SendTransferStatusChange(Producer &producer, const TransferState &tr_state);
-    std::string SendOptimizer(Producer &producer, const OptimizerInfo &opt_info);
+    std::string SendTransferStartMessage(const TransferCompleted &tr_started);
+    std::string SendTransferFinishMessage(const TransferCompleted &tr_completed);
+    std::string SendTransferStatusChange(const TransferState &tr_state);
+    std::string SendOptimizer(const OptimizerInfo &opt_info);
 };
 
 #endif

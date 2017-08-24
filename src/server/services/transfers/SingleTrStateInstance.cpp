@@ -57,8 +57,8 @@ void SingleTrStateInstance::sendStateMessage(const std::string& jobId, uint64_t 
     if (!monitoringMessages)
         return;
 
-    if (!producer.get()) {
-        producer.reset(new Producer(ServerConfig::instance().get<std::string>("MessagingDirectory")));
+    if (!msgIfce.get()) {
+        msgIfce.reset(new MsgIfce(ServerConfig::instance().get<std::string>("MessagingDirectory") + "/monitoring"));
     }
 
     std::vector<TransferState> files;
@@ -66,7 +66,7 @@ void SingleTrStateInstance::sendStateMessage(const std::string& jobId, uint64_t 
         files = db::DBSingleton::instance().getDBObjectInstance()->getStateOfTransfer(jobId, fileId);
         if (!files.empty()) {
             for (auto it = files.begin(); it != files.end(); ++it) {
-                MsgIfce::instance().SendTransferStatusChange(*producer, *it);
+                msgIfce->SendTransferStatusChange(*it);
             }
         }
     }

@@ -45,6 +45,7 @@ static std::string replaceMetadataString(std::string text)
 
 
 LegacyReporter::LegacyReporter(const UrlCopyOpts &opts): producer(opts.msgDir), opts(opts),
+    msgIfce(opts.msgDir + "/monitoring"),
     zmqContext(1), zmqPingSocket(zmqContext, ZMQ_PUB)
 {
     std::string address = std::string("ipc://") + opts.msgDir + "/url_copy-ping.ipc";
@@ -109,7 +110,7 @@ void LegacyReporter::sendTransferStart(const Transfer &transfer, Gfal2TransferPa
     completed.tr_timestamp_start = millisecondsSinceEpoch();
 
     if (opts.enableMonitoring) {
-        std::string msgReturnValue = MsgIfce::instance().SendTransferStartMessage(producer, completed);
+        std::string msgReturnValue = msgIfce.SendTransferStartMessage(completed);
         FTS3_COMMON_LOGGER_NEWLOG(DEBUG) << "Start message content: " << msgReturnValue << commit;
     }
 }
@@ -284,7 +285,7 @@ void LegacyReporter::sendTransferCompleted(const Transfer &transfer, Gfal2Transf
     completed.transfer_type = transfer.stats.transferType;
 
     if (opts.enableMonitoring) {
-        std::string msgReturnValue = MsgIfce::instance().SendTransferFinishMessage(producer, completed);
+        std::string msgReturnValue = msgIfce.SendTransferFinishMessage(completed);
         FTS3_COMMON_LOGGER_NEWLOG(DEBUG) << "Start message content: " << msgReturnValue << commit;
     }
 }

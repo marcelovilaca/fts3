@@ -20,6 +20,7 @@
 
 #include "MsgPipe.h"
 
+#include <fstream>
 #include <signal.h>
 #include <iostream>
 #include <boost/filesystem.hpp>
@@ -45,7 +46,7 @@ void handler(int)
 
 
 MsgPipe::MsgPipe(const std::string &baseDir):
-    consumer(baseDir), producer(baseDir)
+    monitoringQueue(new DirQ(baseDir+"/monitoring"))
 {
     //register sig handler to cleanup resources upon exiting
     signal(SIGFPE, handler);
@@ -64,13 +65,57 @@ MsgPipe::~MsgPipe()
 }
 
 
+int MsgPipe::consume(std::vector<std::string> &messages)
+{
+    std::string content;
+
+    const char *error = NULL;
+    dirq_clear_error(*monitoringQueue);
+
+    unsigned i = 0;
+    for (auto iter = dirq_first(*monitoringQueue); iter != NULL && i < 1000; iter = dirq_next(*monitoringQueue), ++i) {
+        if (dirq_lock(*monitoringQueue, iter, 0) == 0) {
+            const char *path = dirq_get_path(*monitoringQueue, iter);
+
+            try {
+                std::ifstream fstream(path);
+                content.assign((std::istreambuf_iterator<char>(fstream)), std::istreambuf_iterator<char>());
+                messages.emplace_back(content);
+            }
+            catch (const std::exception &ex) {
+                FTS3_COMMON_LOGGER_NEWLOG(ERR)
+                    << "Could not load message from " << path << " (" << ex.what() << ")"
+                    << fts3::common::commit;
+            }
+
+
+            if (dirq_remove(*monitoringQueue, iter) < 0) {
+                error = dirq_get_errstr(*monitoringQueue);
+                FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to remove message from queue (" << path << "): "
+                                               << error
+                                               << fts3::common::commit;
+                dirq_clear_error(*monitoringQueue);
+            }
+        }
+    }
+
+    error = dirq_get_errstr(*monitoringQueue);
+    if (error) {
+        FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to consume messages: " << error << fts3::common::commit;
+        return -1;
+    }
+
+    return 0;
+}
+
+
 void MsgPipe::run()
 {
     std::vector<std::string> messages;
 
     while (stopThreads == false) {
         try {
-            int returnValue = consumer.runConsumerMonitoring(messages);
+            int returnValue = consume(messages);
             if (returnValue != 0) {
                 std::ostringstream errorMessage;
                 errorMessage << "runConsumerMonitoring returned " << returnValue;
@@ -84,23 +129,10 @@ void MsgPipe::run()
         }
         catch (const fs::filesystem_error &ex) {
             FTS3_COMMON_LOGGER_LOG(ERR, ex.what());
-            cleanup();
         }
         catch (...) {
             FTS3_COMMON_LOGGER_LOG(CRIT, "Unexpected exception");
-            cleanup();
         }
         sleep(1);
-    }
-}
-
-
-void MsgPipe::cleanup()
-{
-    std::queue<std::string> myQueue = ConcurrentQueue::getInstance()->theQueue;
-    while (!myQueue.empty()) {
-        std::string msg = myQueue.front();
-        myQueue.pop();
-        producer.runProducerMonitoring(msg);
     }
 }

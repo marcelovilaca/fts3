@@ -23,21 +23,21 @@
 #define MSGPIPE_H
 
 #include <decaf/lang/Runnable.h>
-#include "msg-bus/consumer.h"
-#include "msg-bus/producer.h"
+#include <memory>
+#include <vector>
+#include <common/DirQ.h>
 
 
 class MsgPipe : public decaf::lang::Runnable
 {
 private:
-    Consumer consumer;
-    Producer producer;
+    std::unique_ptr<DirQ> monitoringQueue;
+    int consume(std::vector<std::string> &messages);
 
 public:
     MsgPipe(const std::string &baseDir);
     virtual ~MsgPipe();
     virtual void run();
-    void cleanup();
 };
 
 #endif // MSGPIPE_H

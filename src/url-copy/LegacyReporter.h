@@ -19,12 +19,15 @@
 
 #include "Reporter.h"
 #include <zmq.hpp>
+#include <monitoring/msg-ifce.h>
 
 /// Implements reporter using MsgBus
 class LegacyReporter: public Reporter {
 private:
     Producer producer;
     UrlCopyOpts opts;
+
+    MsgIfce msgIfce;
     zmq::context_t zmqContext;
     zmq::socket_t zmqPingSocket;
 

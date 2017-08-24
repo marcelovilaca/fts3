@@ -73,9 +73,6 @@ static void DoServer(bool isDaemon) throw()
         pipeThread.join();
         producerThread.join();
 
-        pipeMsg1.cleanup();
-        producer.cleanup();
-
         activemq::library::ActiveMQCPP::shutdownLibrary();
     }
     catch (cms::CMSException& e) {

@@ -2959,7 +2959,9 @@ void MySqlAPI::updateDeletionsStateInternal(soci::session& sql, const std::vecto
         sql.commit();
 
         //now send monitoring messages
-        Producer producer(ServerConfig::instance().get<std::string>("MessagingDirectory"));
+        auto msgDir = ServerConfig::instance().get<std::string>("MessagingDirectory");
+        MsgIfce msgIfce(msgDir);
+
         for (auto i = delOpsStatus.begin(); i < delOpsStatus.end(); ++i)
         {
             //send state message
@@ -2970,7 +2972,7 @@ void MySqlAPI::updateDeletionsStateInternal(soci::session& sql, const std::vecto
                 for (it = filesMsg.begin(); it != filesMsg.end(); ++it)
                 {
                     TransferState tmp = (*it);
-                    MsgIfce::instance().SendTransferStatusChange(producer, tmp);
+                    msgIfce.SendTransferStatusChange(tmp);
                 }
             }
             filesMsg.clear();
@@ -3567,6 +3569,9 @@ void MySqlAPI::updateStagingStateInternal(soci::session& sql, const std::vector<
         }
         sql.commit();
 
+        auto msgDir = ServerConfig::instance().get<std::string>("MessagingDirectory");
+        MsgIfce msgIfce(msgDir);
+
         for (auto i = stagingOpsStatus.begin(); i < stagingOpsStatus.end(); ++i)
         {
             if(i->state == "SUBMITTED")
@@ -3578,11 +3583,11 @@ void MySqlAPI::updateStagingStateInternal(soci::session& sql, const std::vector<
             filesMsg = getStateOfTransferInternal(sql, i->jobId, i->fileId);
             if(!filesMsg.empty())
             {
-                Producer producer(ServerConfig::instance().get<std::string>("MessagingDirectory"));
+
                 for (auto it = filesMsg.begin(); it != filesMsg.end(); ++it)
                 {
                     TransferState tmp = (*it);
-                    MsgIfce::instance().SendTransferStatusChange(producer, tmp);
+                    msgIfce.SendTransferStatusChange(tmp);
                 }
             }
             filesMsg.clear();

@@ -31,7 +31,7 @@ struct DirQ;
 class Producer {
 private:
     std::string baseDir;
-    std::unique_ptr<DirQ> monitoringQueue;
+
     std::unique_ptr<DirQ> statusQueue;
     std::unique_ptr<DirQ> logQueue;
 

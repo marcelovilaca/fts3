@@ -35,12 +35,12 @@ using optimizer::PairState;
 
 
 class OptimizerNotifier : public OptimizerCallbacks {
-protected:
+private:
     bool enabled;
-    Producer msgProducer;
+    MsgIfce msgIfce;
 
 public:
-    OptimizerNotifier(bool enabled, const std::string &msgDir): enabled(enabled), msgProducer(msgDir)
+    OptimizerNotifier(bool enabled, const std::string &msgDir): enabled(enabled), msgIfce(msgDir)
     {}
 
     OptimizerNotifier(const OptimizerNotifier &) = delete;
@@ -72,7 +72,7 @@ public:
         msg.connections = decision;
         msg.rationale = rationale;
 
-        MsgIfce::instance().SendOptimizer(msgProducer, msg);
+        msgIfce.SendOptimizer(msg);
     }
 };
 
@@ -100,7 +100,7 @@ void OptimizerService::runService()
 
     OptimizerNotifier optimizerCallbacks(
         config::ServerConfig::instance().get<bool>("MonitoringMessaging"),
-        config::ServerConfig::instance().get<std::string>("MessagingDirectory")
+        config::ServerConfig::instance().get<std::string>("MessagingDirectory") + "/monitoring"
     );
 
     Optimizer optimizer(

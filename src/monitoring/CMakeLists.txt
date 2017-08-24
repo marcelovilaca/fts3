@@ -48,7 +48,7 @@ set(fts_msg_bulk_SOURCES
     msg-bulk-send.cpp
     MsgPipe.cpp
     MsgProducer.cpp
-        BrokerConfig.cpp
+	BrokerConfig.cpp
 )
 
 add_executable(fts_msg_bulk ${fts_msg_bulk_SOURCES})
@@ -56,8 +56,9 @@ target_link_libraries(fts_msg_bulk
     ${ACTIVEMQCPP_LIBRARIES}
     fts_common
     fts_config
-	fts_msg_bus
+	fts_msg_ifce
     rt
+    dirq
     ${Boost_LIBRARIES}
 )
 

@@ -234,7 +234,9 @@ void MySqlAPI::fixDeleteInconsistencies(soci::session &sql)
 void MySqlAPI::recoverFromDeadHosts(soci::session &sql)
 {
     FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Sanity check from dead hosts" << commit;
-    Producer producer(ServerConfig::instance().get<std::string>("MessagingDirectory"));
+
+    auto msgDir = ServerConfig::instance().get<std::string>("MessagingDirectory");
+    MsgIfce msgIfce(msgDir);
 
     soci::rowset<std::string> deadHosts = (
         sql.prepare <<
@@ -269,10 +271,11 @@ void MySqlAPI::recoverFromDeadHosts(soci::session &sql)
                << commit;
 
             //send state monitoring message for the state transition
+
             const std::vector<TransferState> files = getStateOfTransferInternal(sql, jobId, fileId);
             for (auto it = files.begin(); it != files.end(); ++it) {
                 TransferState tmp = (*it);
-                MsgIfce::instance().SendTransferStatusChange(producer, tmp);
+                msgIfce.SendTransferStatusChange(tmp);
             }
         }
     }
