@@ -19,10 +19,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/function.hpp>
 
-#include <glib.h>
-
-#include "msg-bus/consumer.h"
-#include "msg-bus/producer.h"
+#include <msg-bus/Channel.h>
+#include <msg-bus/events.h>
+#include <boost/bind.hpp>
 
 using namespace fts3::events;
 
@@ -50,33 +49,40 @@ BOOST_AUTO_TEST_SUITE(MsgBusTest)
 class MsgBusFixture {
 protected:
     static const std::string TEST_PATH;
+    ChannelFactory factory;
+
+    std::vector<MessageUrlCopy> receivedStatus;
+    std::vector<MessageUpdater> receivedPing;
 
 public:
-    MsgBusFixture() {
+    MsgBusFixture(): factory(TEST_PATH) {
         boost::filesystem::create_directories(TEST_PATH);
     }
 
     ~MsgBusFixture() {
         boost::filesystem::remove_all(TEST_PATH);
     }
+
+    void consumeStatus(Consumer *consumer) {
+        MessageUrlCopy msg;
+        consumer->receive(&msg, false);
+        receivedStatus.emplace_back(msg);
+    }
+
+    void consumePing(Consumer *consumer) {
+        MessageUpdater msg;
+        consumer->receive(&msg, false);
+        receivedPing.emplace_back(msg);
+    }
 };
 
 const std::string MsgBusFixture::TEST_PATH("/tmp/MsgBusTest");
 
 
-template <typename MSG_CONTAINER>
-static void expectZeroMessages(boost::function<int (Consumer*, MSG_CONTAINER&)> func, Consumer &consumer)
-{
-    MSG_CONTAINER container;
-    BOOST_CHECK_EQUAL(0, func(&consumer, container));
-    BOOST_CHECK_EQUAL(0, container.size());
-}
-
-
 BOOST_FIXTURE_TEST_CASE (simpleStatus, MsgBusFixture)
 {
-    Producer producer(TEST_PATH);
-    Consumer consumer(TEST_PATH);
+    auto producer = factory.createProducer(UrlCopyStatusChannel);
+    auto consumer = factory.createConsumer(UrlCopyStatusChannel);
 
     MessageUrlCopy original;
     original.set_job_id("1906cc40-b915-11e5-9a03-02163e006dd0");
@@ -96,54 +102,108 @@ BOOST_FIXTURE_TEST_CASE (simpleStatus, MsgBusFixture)
     original.set_timestamp(15689);
     original.set_throughput(0.88);
 
-    BOOST_CHECK_EQUAL(0, producer.runProducerStatus(original));
-
-    // Make sure the messages don't get messed up
-    expectZeroMessages<std::map<int, MessageLog>>(&Consumer::runConsumerLog, consumer);
+    BOOST_CHECK(producer->send(original));
 
     // First attempt must return the single message
-    std::vector<MessageUrlCopy> statuses;
-    BOOST_CHECK_EQUAL(0, consumer.runConsumerStatus(statuses));
-    BOOST_CHECK_EQUAL(1, statuses.size());
-    BOOST_CHECK_EQUAL(statuses[0], original);
+    MessageUrlCopy received;
+    BOOST_CHECK(consumer->receive(&received));
+    BOOST_CHECK_EQUAL(received, original);
 
     // Second attempt must return empty (already consumed)
-    statuses.clear();
-    BOOST_CHECK_EQUAL(0, consumer.runConsumerStatus(statuses));
-    BOOST_CHECK_EQUAL(0, statuses.size());
+    BOOST_CHECK(!consumer->receive(&received, false));
 }
 
 
-BOOST_FIXTURE_TEST_CASE (simpleLog, MsgBusFixture)
+BOOST_FIXTURE_TEST_CASE (pollOne, MsgBusFixture)
 {
-    Producer producer(TEST_PATH);
-    Consumer consumer(TEST_PATH);
+    auto producerStatus = factory.createProducer(UrlCopyStatusChannel);
+    auto producerPing = factory.createProducer(UrlCopyPingChannel);
 
-    MessageLog original;
+    auto consumerStatus = factory.createConsumer(UrlCopyStatusChannel);
+    auto consumerPing = factory.createConsumer(UrlCopyPingChannel);
 
+    Poller poller;
+    poller.add(consumerStatus.get(), boost::bind(&MsgBusFixture::consumeStatus, this, _1));
+    poller.add(consumerPing.get(), boost::bind(&MsgBusFixture::consumePing, this, _1));
+
+    MessageUrlCopy original;
     original.set_job_id("1906cc40-b915-11e5-9a03-02163e006dd0");
-    original.set_file_id(44);
-    original.set_host("abc.cern.ch");
-    original.set_log_path("/var/log/fts3/transfers/log.log");
-    original.set_has_debug_file(true);
-    original.set_timestamp(time(NULL));
+    original.set_transfer_status("FAILED");
+    original.set_transfer_message("TEST FAILURE, EVERYTHING IS TERRIBLE");
+    original.set_source_se("mock://source/file");
+    original.set_dest_se("mock://source/file2");
+    original.set_file_id(42);
+    original.set_process_id(1234);
+    original.set_time_in_secs(55);
+    original.set_filesize(1023);
+    original.set_nostreams(33);
+    original.set_timeout(22);
+    original.set_buffersize(1);
+    original.set_retry(5);
+    original.set_retry(0.2);
+    original.set_timestamp(15689);
+    original.set_throughput(0.88);
+    BOOST_CHECK(producerStatus->send(original));
 
-    BOOST_CHECK_EQUAL(0, producer.runProducerLog(original));
+    BOOST_CHECK(poller.poll(boost::posix_time::seconds(1)));
 
-    // Make sure the messages don't get messed up
-    expectZeroMessages<std::vector<MessageUrlCopy>>(&Consumer::runConsumerStatus, consumer);
+    BOOST_CHECK_EQUAL(1, receivedStatus.size());
+    BOOST_CHECK_EQUAL(0, receivedPing.size());
+    BOOST_CHECK_EQUAL(original, receivedStatus[0]);
+}
 
-    // First attempt must return the single message
-    std::map<int, MessageLog> logs;
-    BOOST_CHECK_EQUAL(0, consumer.runConsumerLog(logs));
-    BOOST_CHECK_EQUAL(1, logs.size());
-    BOOST_CHECK_NO_THROW(logs.at(original.file_id()));
-    BOOST_CHECK_EQUAL(logs.at(original.file_id()), original);
 
-    // Second attempt must return empty (already consumed)
-    logs.clear();
-    BOOST_CHECK_EQUAL(0, consumer.runConsumerLog(logs));
-    BOOST_CHECK_EQUAL(0, logs.size());
+BOOST_FIXTURE_TEST_CASE (pollTwo, MsgBusFixture)
+{
+    auto producerStatus = factory.createProducer(UrlCopyStatusChannel);
+    auto producerPing = factory.createProducer(UrlCopyPingChannel);
+
+    auto consumerStatus = factory.createConsumer(UrlCopyStatusChannel);
+    auto consumerPing = factory.createConsumer(UrlCopyPingChannel);
+
+    Poller poller;
+    poller.add(consumerStatus.get(), boost::bind(&MsgBusFixture::consumeStatus, this, _1));
+    poller.add(consumerPing.get(), boost::bind(&MsgBusFixture::consumePing, this, _1));
+
+    MessageUrlCopy original;
+    original.set_job_id("1906cc40-b915-11e5-9a03-02163e006dd0");
+    original.set_transfer_status("FAILED");
+    original.set_transfer_message("TEST FAILURE, EVERYTHING IS TERRIBLE");
+    original.set_source_se("mock://source/file");
+    original.set_dest_se("mock://source/file2");
+    original.set_file_id(42);
+    original.set_process_id(1234);
+    original.set_time_in_secs(55);
+    original.set_filesize(1023);
+    original.set_nostreams(33);
+    original.set_timeout(22);
+    original.set_buffersize(1);
+    original.set_retry(5);
+    original.set_retry(0.2);
+    original.set_timestamp(15689);
+    original.set_throughput(0.88);
+    BOOST_CHECK(producerStatus->send(original));
+
+    MessageUpdater originalPing;
+    originalPing.set_job_id("7b747d24-8d8e-11e7-b4c3-02163e006dd0");
+    originalPing.set_file_id(1234);
+    originalPing.set_timestamp(15689);
+    originalPing.set_transfer_status("UPDATE");
+    originalPing.set_source_surl("mock://source/file");
+    originalPing.set_dest_surl("mock://source/file2");
+    originalPing.set_source_turl("");
+    originalPing.set_dest_turl("");
+    originalPing.set_process_id(1);
+    originalPing.set_throughput(0.5);
+    originalPing.set_transferred(4242);
+    BOOST_CHECK(producerPing->send(originalPing));
+
+    BOOST_CHECK(poller.poll(boost::posix_time::seconds(1)));
+
+    BOOST_CHECK_EQUAL(1, receivedStatus.size());
+    BOOST_CHECK_EQUAL(1, receivedPing.size());
+    BOOST_CHECK_EQUAL(original, receivedStatus[0]);
+    BOOST_CHECK_EQUAL(originalPing, receivedPing[0]);
 }
 
 

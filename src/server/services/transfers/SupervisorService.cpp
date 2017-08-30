@@ -33,35 +33,39 @@ SupervisorService::SupervisorService(): BaseService("SupervisorService"),
 }
 
 
+static void pingCallback(events::Consumer *consumer)
+{
+    fts3::events::MessageUpdater event;
+    if (!consumer->receive(&event)) {
+        return;
+    }
+
+    FTS3_COMMON_LOGGER_NEWLOG(INFO)
+        << "Process Updater Monitor "
+        << "\nJob id: " << event.job_id()
+        << "\nFile id: " << event.file_id()
+        << "\nPid: " << event.process_id()
+        << "\nTimestamp: " << event.timestamp()
+        << "\nThroughput: " << event.throughput()
+        << "\nTransferred: " << event.transferred()
+        << commit;
+    ThreadSafeList::get_instance().updateMsg(event);
+
+    std::vector<fts3::events::MessageUpdater> events{event};
+    db::DBSingleton::instance().getDBObjectInstance()->updateFileTransferProgressVector(events);
+}
+
+
 void SupervisorService::runService()
 {
     std::unique_ptr<events::Consumer> consumer = msgFactory.createConsumer(events::UrlCopyPingChannel);
 
+    events::Poller poller;
+    poller.add(consumer.get(), events::Poller::CallbackFunction(pingCallback));
+
     while (!boost::this_thread::interruption_requested()) {
-        std::vector<fts3::events::MessageUpdater> events;
-
         try {
-            boost::this_thread::sleep(boost::posix_time::seconds(1));
-            fts3::events::MessageUpdater event;
-
-            while (consumer->receive(&event, false)) {
-                events.emplace_back(event);
-
-                FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Process Updater Monitor "
-                    << "\nJob id: " << event.job_id()
-                    << "\nFile id: " << event.file_id()
-                    << "\nPid: " << event.process_id()
-                    << "\nTimestamp: " << event.timestamp()
-                    << "\nThroughput: " << event.throughput()
-                    << "\nTransferred: " << event.transferred()
-                    << commit;
-                ThreadSafeList::get_instance().updateMsg(event);
-            }
-
-            if (!events.empty()) {
-                db::DBSingleton::instance().getDBObjectInstance()->updateFileTransferProgressVector(events);
-                events.clear();
-            }
+            poller.poll(boost::posix_time::seconds(1));
         }
         catch (const boost::thread_interrupted&) {
             FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Thread interruption requested" << commit;

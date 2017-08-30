@@ -48,6 +48,8 @@ LegacyReporter::LegacyReporter(const UrlCopyOpts &opts): producer(opts.msgDir), 
     msgIfce(opts.msgDir + "/monitoring"), msgFactory(opts.msgDir)
 {
     pingProducer = msgFactory.createProducer(events::UrlCopyPingChannel);
+    statusProducer = msgFactory.createProducer(events::UrlCopyStatusChannel);
+    logProducer = msgFactory.createProducer(events::UrlCopyLogChannel);
 }
 
 
@@ -146,7 +148,7 @@ void LegacyReporter::sendTransferCompleted(const Transfer &transfer, Gfal2Transf
     log.set_log_path(transfer.logFile);
     log.set_has_debug_file(opts.debugLevel > 1);
 
-    producer.runProducerLog(log);
+    logProducer->send(log);
 
     // Status
     events::MessageUrlCopy status;
@@ -305,7 +307,7 @@ void LegacyReporter::sendPing(const Transfer &transfer)
     ping.set_dest_turl("gsiftp:://fake");
 
     try {
-        pingProducer->send(ping);
+        pingProducer->send(ping, false);
     }
     catch (const std::exception &error) {
         FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to send heartbeat: " << error.what() << commit;

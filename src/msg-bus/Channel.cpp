@@ -97,5 +97,37 @@ std::unique_ptr<Consumer> ChannelFactory::createConsumer(const std::string &name
 }
 
 
+Poller::Poller()
+{
+}
+
+
+void Poller::add(Consumer *consumer, CallbackFunction callback)
+{
+    zmq::pollitem_t pollItem;
+    pollItem.events = ZMQ_POLLIN;
+    pollItem.socket = static_cast<void*>(consumer->zmqSocket);
+    zmqPollItems.push_back(pollItem);
+    consumers.emplace_back(std::make_pair<Consumer*, CallbackFunction>(consumer, callback));
+}
+
+
+bool Poller::poll(boost::posix_time::time_duration timeout)
+{
+    zmq::poll(zmqPollItems.data(), zmqPollItems.size(), timeout.total_microseconds());
+    bool ret = false;
+
+    for (int i = 0; i < zmqPollItems.size(); ++i) {
+        if (zmqPollItems[i].revents & ZMQ_POLLIN) {
+            Consumer *consumer = consumers[i].first;
+            CallbackFunction &callback = consumers[i].second;
+            callback(consumer);
+            ret = true;
+        }
+    }
+
+    return ret;
+}
+
 } // end namespace msg
 } // end namespace fts3

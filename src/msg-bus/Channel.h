@@ -21,6 +21,8 @@
 #include <memory>
 #include <google/protobuf/message.h>
 #include <boost/filesystem/path.hpp>
+#include <boost/date_time/posix_time/posix_time_config.hpp>
+#include <boost/function.hpp>
 
 
 namespace fts3 {
@@ -28,12 +30,17 @@ namespace events {
 
 /// URL Copy Ping Messages go to this channel
 const std::string UrlCopyPingChannel("url_copy-ping.ipc");
+/// Status messages go to this channel
+const std::string UrlCopyStatusChannel("url_copy-status.ipc");
+/// Log messages go to this channel
+const std::string UrlCopyLogChannel("url_copy-logs.ipc");
 
 /// Consumer wraps the receiver end of a channel
 /// @see ChannelFactory
 class Consumer {
 private:
     friend class ChannelFactory;
+    friend class Poller;
     zmq::socket_t zmqSocket;
 
     Consumer(zmq::socket_t && socket);
@@ -88,6 +95,28 @@ public:
     /// @param listen   If true, the consumer will bind to the socket. If false, it will connect.
     /// @note           Make sure either the consumer or producer listens
     std::unique_ptr<Consumer> createConsumer(const std::string &name, bool listen = true);
+};
+
+/// Poller allows to poll multiple consumers, so the client code can demultiplex
+class Poller {
+public:
+    typedef boost::function<void (Consumer *consumer)> CallbackFunction;
+
+private:
+    std::vector<std::pair<Consumer*, CallbackFunction>> consumers;
+    std::vector<zmq::pollitem_t> zmqPollItems;
+
+public:
+    /// Constructor
+    Poller();
+
+    /// Add a consumer to poll
+    void add(Consumer *consumer, CallbackFunction callback);
+
+    /// Poll for an available consumer
+    /// @param timeout  Time to block until something arrives
+    /// @return         true if anything has been consumed
+    bool poll(boost::posix_time::time_duration timeout);
 };
 
 } // end namespace msg
