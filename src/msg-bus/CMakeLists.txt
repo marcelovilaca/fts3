@@ -51,7 +51,8 @@ target_link_libraries(fts_msg_bus
     ${GLIB2_LIBRARIES}
     ${DIRQ_LIBRARIES}
     ${PROTOBUF_LIBRARY}
-    -lpthread
+    pthread
+    zmq
 )
 
 set_target_properties(fts_msg_bus PROPERTIES

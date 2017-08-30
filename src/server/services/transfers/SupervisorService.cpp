@@ -28,30 +28,23 @@ namespace server {
 
 
 SupervisorService::SupervisorService(): BaseService("SupervisorService"),
-    zmqContext(1), zmqPingSocket(zmqContext, ZMQ_SUB)
+    msgFactory(config::ServerConfig::instance().get<std::string>("MessagingDirectory"))
 {
-    std::string messagingDirectory = config::ServerConfig::instance().get<std::string>("MessagingDirectory");
-    std::string address = std::string("ipc://") + messagingDirectory + "/url_copy-ping.ipc";
-    zmqPingSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
-
-    zmqPingSocket.bind(address.c_str());
 }
 
 
 void SupervisorService::runService()
 {
+    std::unique_ptr<events::Consumer> consumer = msgFactory.createConsumer(events::UrlCopyPingChannel);
+
     while (!boost::this_thread::interruption_requested()) {
         std::vector<fts3::events::MessageUpdater> events;
-        zmq::message_t message;
 
         try {
             boost::this_thread::sleep(boost::posix_time::seconds(1));
+            fts3::events::MessageUpdater event;
 
-            while (zmqPingSocket.recv(&message, ZMQ_NOBLOCK)) {
-                fts3::events::MessageUpdater event;
-                if (!event.ParseFromArray(message.data(), message.size())) {
-                    continue;
-                }
+            while (consumer->receive(&event, false)) {
                 events.emplace_back(event);
 
                 FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Process Updater Monitor "

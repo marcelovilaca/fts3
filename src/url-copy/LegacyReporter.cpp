@@ -45,11 +45,9 @@ static std::string replaceMetadataString(std::string text)
 
 
 LegacyReporter::LegacyReporter(const UrlCopyOpts &opts): producer(opts.msgDir), opts(opts),
-    msgIfce(opts.msgDir + "/monitoring"),
-    zmqContext(1), zmqPingSocket(zmqContext, ZMQ_PUB)
+    msgIfce(opts.msgDir + "/monitoring"), msgFactory(opts.msgDir)
 {
-    std::string address = std::string("ipc://") + opts.msgDir + "/url_copy-ping.ipc";
-    zmqPingSocket.connect(address.c_str());
+    pingProducer = msgFactory.createProducer(events::UrlCopyPingChannel);
 }
 
 
@@ -307,10 +305,7 @@ void LegacyReporter::sendPing(const Transfer &transfer)
     ping.set_dest_turl("gsiftp:://fake");
 
     try {
-        std::string serialized = ping.SerializeAsString();
-        zmq::message_t message(serialized.size());
-        memcpy(message.data(), serialized.c_str(), serialized.size());
-        zmqPingSocket.send(message, 0);
+        pingProducer->send(ping);
     }
     catch (const std::exception &error) {
         FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to send heartbeat: " << error.what() << commit;

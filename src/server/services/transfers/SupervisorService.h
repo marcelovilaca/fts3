@@ -17,8 +17,8 @@
 #ifndef FTS3_SUPERVISORSERVICE_H
 #define FTS3_SUPERVISORSERVICE_H
 
+#include <msg-bus/Channel.h>
 #include "../BaseService.h"
-#include <zmq.hpp>
 
 namespace fts3 {
 namespace server {
@@ -30,8 +30,7 @@ namespace server {
  */
 class SupervisorService: public BaseService {
 protected:
-    zmq::context_t zmqContext;
-    zmq::socket_t zmqPingSocket;
+    events::ChannelFactory msgFactory;
 
 public:
     /// Constructor

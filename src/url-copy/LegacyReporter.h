@@ -20,6 +20,7 @@
 #include "Reporter.h"
 #include <zmq.hpp>
 #include <monitoring/msg-ifce.h>
+#include <msg-bus/Channel.h>
 
 /// Implements reporter using MsgBus
 class LegacyReporter: public Reporter {
@@ -28,8 +29,8 @@ private:
     UrlCopyOpts opts;
 
     MsgIfce msgIfce;
-    zmq::context_t zmqContext;
-    zmq::socket_t zmqPingSocket;
+    fts3::events::ChannelFactory msgFactory;
+    std::unique_ptr<fts3::events::Producer> pingProducer;
 
 public:
     LegacyReporter(const UrlCopyOpts &opts);
