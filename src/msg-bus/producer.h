@@ -43,8 +43,6 @@ public:
     int runProducerStatus(const fts3::events::MessageUrlCopy &msg);
 
     int runProducerLog(const fts3::events::MessageLog &msg);
-
-    int runProducerMonitoring(const std::string &serialized);
 };
 
 
