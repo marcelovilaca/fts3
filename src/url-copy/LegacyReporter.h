@@ -25,7 +25,6 @@
 /// Implements reporter using MsgBus
 class LegacyReporter: public Reporter {
 private:
-    Producer producer;
     UrlCopyOpts opts;
 
     MsgIfce msgIfce;

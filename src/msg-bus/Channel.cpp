@@ -66,6 +66,9 @@ ChannelFactory::~ChannelFactory()
 std::unique_ptr<Producer> ChannelFactory::createProducer(const std::string &name, bool listen)
 {
     zmq::socket_t zmqSocket(zmqContext, ZMQ_PUSH);
+    int linger = 0;
+    zmqSocket.setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
+
     auto fullPath = baseDir / name;
     std::string address = std::string("ipc://") + fullPath.native();
 
@@ -83,6 +86,10 @@ std::unique_ptr<Producer> ChannelFactory::createProducer(const std::string &name
 std::unique_ptr<Consumer> ChannelFactory::createConsumer(const std::string &name, bool listen)
 {
     zmq::socket_t zmqSocket(zmqContext, ZMQ_PULL);
+
+    int linger = 0;
+    zmqSocket.setsockopt(ZMQ_LINGER, &linger, sizeof(linger));
+
     auto fullPath = baseDir / name;
     std::string address = std::string("ipc://") + fullPath.native();
 

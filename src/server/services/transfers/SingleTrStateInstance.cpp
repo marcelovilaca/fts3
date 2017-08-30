@@ -27,7 +27,6 @@
 #include "config/ServerConfig.h"
 #include "common/Logger.h"
 #include "db/generic/SingleDbInstance.h"
-#include "msg-bus/producer.h"
 
 using namespace db;
 using namespace fts3::common;

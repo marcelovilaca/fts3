@@ -30,7 +30,6 @@
 #include <boost/timer/timer.hpp>
 #include <db/generic/LinkConfig.h>
 #include <db/generic/Pair.h>
-#include <msg-bus/producer.h>
 
 #include "common/Uri.h"
 

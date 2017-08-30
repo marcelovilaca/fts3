@@ -32,7 +32,6 @@
 #include "db/generic/SingleDbInstance.h"
 #include "common/Logger.h"
 #include "config/ServerConfig.h"
-#include "msg-bus/producer.h"
 #include "../context/JobContext.h"
 
 /**
@@ -50,8 +49,7 @@ public:
 
     /// Constructor
     StateUpdater(const std::string &operation) :
-        db(*db::DBSingleton::instance().getDBObjectInstance()), operation(operation),
-        producer(fts3::config::ServerConfig::instance().get<std::string>("MessagingDirectory"))
+        db(*db::DBSingleton::instance().getDBObjectInstance()), operation(operation)
     {
     }
 
@@ -130,8 +128,6 @@ protected:
     GenericDbIfce& db;
     /// operation name ('_delete' or '_staging')
     const std::string operation;
-
-    Producer producer;
 };
 
 #endif // STATEUPDATER_H_

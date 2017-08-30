@@ -24,7 +24,6 @@
 #include "db/generic/GenericDbIfce.h"
 #include "db/generic/StoragePairState.h"
 #include "msg-bus/consumer.h"
-#include "msg-bus/producer.h"
 
 OptimizerMode getOptimizerModeInner(soci::session &sql, const std::string &source, const std::string &dest);
 
@@ -187,7 +186,7 @@ public:
     virtual void updateFileTransferProgressVector(const std::vector<fts3::events::MessageUpdater> &messages);
 
     /// Bulk update for log files
-    virtual void transferLogFileVector(std::map<int, fts3::events::MessageLog>& messagesLog);
+    virtual void transferLogFileVector(const std::vector<fts3::events::MessageLog>& messagesLog);
 
     /**
      * Signals that the server is alive

@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include <msg-bus/Channel.h>
 #include "TransfersService.h"
 #include "VoShares.h"
 
@@ -33,8 +34,6 @@
 
 #include "TransferFileHandler.h"
 #include "FileTransferExecutor.h"
-
-#include <msg-bus/producer.h>
 
 using namespace fts3::common;
 
@@ -236,7 +235,8 @@ void TransfersService::getFiles(const std::vector<QueueId>& queues, int availabl
  */
 static void failUnschedulable(const std::vector<QueueId> &unschedulable)
 {
-    Producer producer(config::ServerConfig::instance().get<std::string>("MessagingDirectory"));
+    events::ChannelFactory channelFactory(config::ServerConfig::instance().get<std::string>("MessagingDirectory"));
+    auto statusProducer = channelFactory.createProducer(events::UrlCopyStatusChannel);
 
     std::map<std::string, std::list<TransferFile> > voQueues;
     DBSingleton::instance().getDBObjectInstance()->getReadyTransfers(unschedulable, voQueues);
@@ -257,7 +257,7 @@ static void failUnschedulable(const std::vector<QueueId> &unschedulable)
             status.set_retry(false);
             status.set_errcode(EPERM);
 
-            producer.runProducerStatus(status);
+            statusProducer->send(status);
         }
     }
 }

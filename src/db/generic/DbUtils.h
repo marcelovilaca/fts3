@@ -29,7 +29,6 @@
 #include <time.h>
 
 #include "config/ServerConfig.h"
-#include "msg-bus/producer.h"
 #include "GenericDbIfce.h"
 
 using namespace fts3::config;

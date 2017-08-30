@@ -16,6 +16,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ *
+ * TO BE GONE
+ * Kept temporarely so there is no need to drain
  */
 
 #pragma once
@@ -47,7 +51,7 @@ public:
 
     int runConsumerStatus(std::vector<fts3::events::MessageUrlCopy> &messages);
 
-    int runConsumerLog(std::map<int, fts3::events::MessageLog> &messages);
+    int runConsumerLog(std::vector<fts3::events::MessageLog> &messages);
 
     void purgeAll();
 };

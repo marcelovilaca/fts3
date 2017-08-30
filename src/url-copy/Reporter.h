@@ -18,7 +18,6 @@
 #define FTS3_REPORTER_H
 
 #include <string>
-#include "msg-bus/producer.h"
 
 #include "Gfal2.h"
 #include "Transfer.h"

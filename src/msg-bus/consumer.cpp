@@ -87,7 +87,7 @@ int Consumer::runConsumerStatus(std::vector<fts3::events::MessageUrlCopy> &messa
 }
 
 
-int Consumer::runConsumerLog(std::map<int, fts3::events::MessageLog> &messages)
+int Consumer::runConsumerLog(std::vector<fts3::events::MessageLog> &messages)
 {
     fts3::events::MessageLog buffer;
 
@@ -109,7 +109,7 @@ int Consumer::runConsumerLog(std::map<int, fts3::events::MessageLog> &messages)
                 << fts3::common::commit;
             }
 
-            messages[buffer.file_id()] = buffer;
+            messages.emplace_back(buffer);
             if (!iter.remove()) {
                 error = logQueue->errstr();
                 FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Failed to remove message from queue (" << path << "): "

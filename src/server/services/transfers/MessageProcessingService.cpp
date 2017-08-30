@@ -42,8 +42,7 @@ extern time_t updateRecords;
 
 
 MessageProcessingService::MessageProcessingService(): BaseService("MessageProcessingService"),
-    consumer(ServerConfig::instance().get<std::string>("MessagingDirectory")),
-    producer(ServerConfig::instance().get<std::string>("MessagingDirectory"))
+    consumer(ServerConfig::instance().get<std::string>("MessagingDirectory"))
 {
     messages.reserve(600);
 }
@@ -69,17 +68,6 @@ void MessageProcessingService::runService()
             if (boost::this_thread::interruption_requested() && messages.empty() && messagesLog.empty())
             {
                 break;
-            }
-
-            //if conn to the db is lost, do not retrieve state, save it for later
-            //use one fast query
-            try
-            {
-                db::DBSingleton::instance().getDBObjectInstance()->getDrain();
-            }
-            catch (...) {
-                boost::this_thread::sleep(boost::posix_time::seconds(10));
-                continue;
             }
 
             // update statuses
@@ -112,33 +100,9 @@ void MessageProcessingService::runService()
         }
         catch (const std::exception& e) {
             FTS3_COMMON_LOGGER_NEWLOG(ERR) << e.what() << commit;
-
-            for (auto iterBreak = messages.begin(); iterBreak != messages.end(); ++iterBreak)
-            {
-                producer.runProducerStatus(*iterBreak);
-            }
-
-            std::map<int, fts3::events::MessageLog>::const_iterator iterLogBreak;
-            for (iterLogBreak = messagesLog.begin(); iterLogBreak != messagesLog.end(); ++iterLogBreak)
-            {
-                fts3::events::MessageLog msgLogBreak = (*iterLogBreak).second;
-                producer.runProducerLog( msgLogBreak );
-            }
         }
         catch (...) {
             FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Message queue thrown unhandled exception" << commit;
-
-            for (auto iterBreak = messages.begin(); iterBreak != messages.end(); ++iterBreak)
-            {
-                producer.runProducerStatus(*iterBreak);
-            }
-
-            std::map<int, fts3::events::MessageLog>::const_iterator iterLogBreak;
-            for (iterLogBreak = messagesLog.begin(); iterLogBreak != messagesLog.end(); ++iterLogBreak)
-            {
-                fts3::events::MessageLog msgLogBreak = (*iterLogBreak).second;
-                producer.runProducerLog( msgLogBreak );
-            }
         }
         boost::this_thread::sleep(msgCheckInterval);
     }
@@ -235,12 +199,10 @@ void MessageProcessingService::updateDatabase(const fts3::events::MessageUrlCopy
     catch (std::exception& e)
     {
         FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Message queue updateDatabase throw exception " << e.what() << commit;
-        producer.runProducerStatus(msg);
     }
     catch (...)
     {
         FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Message queue updateDatabase throw exception" << commit;
-        producer.runProducerStatus(msg);
     }
 }
 
@@ -253,23 +215,6 @@ void MessageProcessingService::executeUpdate(const std::vector<fts3::events::Mes
     {
         try
         {
-            if(boost::this_thread::interruption_requested())
-            {
-                for (auto iterBreak = messages.begin(); iterBreak != messages.end(); ++iterBreak)
-                {
-                    producer.runProducerStatus(*iterBreak);
-                }
-
-                std::map<int, fts3::events::MessageLog>::const_iterator iterLogBreak;
-                for (iterLogBreak = messagesLog.begin(); iterLogBreak != messagesLog.end(); ++iterLogBreak)
-                {
-                    fts3::events::MessageLog msgLogBreak = (*iterLogBreak).second;
-                    producer.runProducerLog( msgLogBreak );
-                }
-
-                break;
-            }
-
             msgUpdater.set_job_id((*iter).job_id());
             msgUpdater.set_file_id((*iter).file_id());
             msgUpdater.set_process_id((*iter).process_id());

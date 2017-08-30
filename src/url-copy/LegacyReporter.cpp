@@ -16,8 +16,8 @@
 
 #include "LegacyReporter.h"
 #include <boost/algorithm/string.hpp>
-#include "common/Logger.h"
-#include "monitoring/msg-ifce.h"
+#include <msg-bus/events.h>
+#include <common/Logger.h>
 
 namespace events = fts3::events;
 using fts3::common::commit;
@@ -44,7 +44,7 @@ static std::string replaceMetadataString(std::string text)
 }
 
 
-LegacyReporter::LegacyReporter(const UrlCopyOpts &opts): producer(opts.msgDir), opts(opts),
+LegacyReporter::LegacyReporter(const UrlCopyOpts &opts): opts(opts),
     msgIfce(opts.msgDir + "/monitoring"), msgFactory(opts.msgDir)
 {
     pingProducer = msgFactory.createProducer(events::UrlCopyPingChannel);
@@ -65,7 +65,7 @@ void LegacyReporter::sendTransferStart(const Transfer &transfer, Gfal2TransferPa
     log.set_log_path(transfer.logFile);
     log.set_has_debug_file(opts.debugLevel > 1);
 
-    producer.runProducerLog(log);
+    logProducer->send(log);
 
     // Status
     events::MessageUrlCopy status;
@@ -78,7 +78,7 @@ void LegacyReporter::sendTransferStart(const Transfer &transfer, Gfal2TransferPa
     status.set_process_id(getpid());
     status.set_transfer_status("ACTIVE");
 
-    producer.runProducerStatus(status);
+    statusProducer->send(status);
 
     // Transfer completed
     TransferCompleted completed;
@@ -132,7 +132,7 @@ void LegacyReporter::sendProtocol(const Transfer &transfer, Gfal2TransferParams 
     status.set_transfer_status("UPDATE");
     status.set_process_id(getpid());
 
-    producer.runProducerStatus(status);
+    statusProducer->send(status);
 }
 
 
@@ -190,7 +190,7 @@ void LegacyReporter::sendTransferCompleted(const Transfer &transfer, Gfal2Transf
         }
     }
 
-    producer.runProducerStatus(status);
+    statusProducer->send(status);
 
     // Transfer completed
     TransferCompleted completed;

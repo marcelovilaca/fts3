@@ -225,7 +225,7 @@ public:
     virtual void updateFileTransferProgressVector(const std::vector<fts3::events::MessageUpdater> &messages) = 0;
 
     /// Bulk update for log files
-    virtual void transferLogFileVector(std::map<int, fts3::events::MessageLog>& messagesLog) = 0;
+    virtual void transferLogFileVector(const std::vector<fts3::events::MessageLog>& messagesLog) = 0;
 
     /**
      * Signals that the server is alive

@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <boost/filesystem/operations.hpp>
 #include <boost/lexical_cast.hpp>
+#include <msg-bus/events.h>
 #include "common/Logger.h"
 
 #include "LogHelper.h"

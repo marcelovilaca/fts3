@@ -21,6 +21,7 @@
 #include "ReuseTransfersService.h"
 
 #include <fstream>
+#include <msg-bus/Channel.h>
 
 #include "common/DaemonTools.h"
 #include "config/ServerConfig.h"
@@ -367,7 +368,8 @@ void ReuseTransfersService::startUrlCopy(std::string const & job_id, std::list<T
  */
 static void failUnschedulable(const std::vector<QueueId> &unschedulable)
 {
-    Producer producer(config::ServerConfig::instance().get<std::string>("MessagingDirectory"));
+    events::ChannelFactory channelFactory(config::ServerConfig::instance().get<std::string>("MessagingDirectory"));
+    auto statusProducer = channelFactory.createProducer(events::UrlCopyStatusChannel);
 
     std::map<std::string, std::queue<std::pair<std::string, std::list<TransferFile> > > > voQueues;
     DBSingleton::instance().getDBObjectInstance()->getReadySessionReuseTransfers(unschedulable, voQueues);
@@ -391,7 +393,7 @@ static void failUnschedulable(const std::vector<QueueId> &unschedulable)
                 status.set_retry(false);
                 status.set_errcode(EPERM);
 
-                producer.runProducerStatus(status);
+                statusProducer->send(status);
             }
             queues.pop();
         }

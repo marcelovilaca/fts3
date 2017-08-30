@@ -2231,7 +2231,7 @@ void MySqlAPI::updateProtocol(const std::vector<fts3::events::MessageUrlCopy>& m
 }
 
 
-void MySqlAPI::transferLogFileVector(std::map<int, fts3::events::MessageLog>& messagesLog)
+void MySqlAPI::transferLogFileVector(const std::vector<fts3::events::MessageLog>& messagesLog)
 {
     soci::session sql(*connectionPool);
     std::string filePath;
@@ -2249,23 +2249,11 @@ void MySqlAPI::transferLogFileVector(std::map<int, fts3::events::MessageLog>& me
 
         sql.begin();
 
-        std::map<int, fts3::events::MessageLog>::iterator iterLog = messagesLog.begin();
-        while (iterLog != messagesLog.end())
-        {
-            filePath = ((*iterLog).second).log_path();
-            fileId = ((*iterLog).second).file_id();
-            debugFile = ((*iterLog).second).has_debug_file();
+        for (auto i = messagesLog.begin(); i != messagesLog.end(); ++i) {
+            filePath = i->log_path();
+            fileId = i->file_id();
+            debugFile = i->has_debug_file();
             stmt.execute(true);
-
-            if (stmt.get_affected_rows() > 0)
-            {
-                // erase
-                messagesLog.erase(iterLog++);
-            }
-            else
-            {
-                ++iterLog;
-            }
         }
 
         sql.commit();

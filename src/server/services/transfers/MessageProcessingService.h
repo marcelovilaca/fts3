@@ -16,6 +16,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * TO BE GONE
+ * Kept alive to avoid draining on 3.8 update
  */
 
 #pragma once
@@ -25,7 +28,6 @@
 #include <vector>
 
 #include "msg-bus/consumer.h"
-#include "msg-bus/producer.h"
 #include "../BaseService.h"
 
 namespace fts3 {
@@ -36,10 +38,9 @@ class MessageProcessingService: public BaseService
 {
 private:
     std::vector<fts3::events::MessageUrlCopy> messages;
-    std::map<int, fts3::events::MessageLog> messagesLog;
+    std::vector<fts3::events::MessageLog> messagesLog;
 
     Consumer consumer;
-    Producer producer;
 
 public:
 
