@@ -186,6 +186,9 @@ void FileTransferExecutor::run(boost::any & ctx)
             protoMsg.set_timeout(cmdBuilder.getTimeout());
             db->updateProtocol(std::vector<events::MessageUrlCopy>{protoMsg});
 
+            // Send current state before forking (while it is in READY)
+            SingleTrStateInstance::instance().sendStateMessage(tf.jobId, tf.fileId);
+
             // Spawn the fts_url_copy
             bool failed = false;
             std::string forkMessage;
@@ -214,8 +217,6 @@ void FileTransferExecutor::run(boost::any & ctx)
                 );
             }
 
-            // Send current state
-            SingleTrStateInstance::instance().sendStateMessage(tf.jobId, tf.fileId);
             fts3::events::MessageUpdater msg;
             msg.set_job_id(tf.jobId);
             msg.set_file_id(tf.fileId);
