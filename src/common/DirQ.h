@@ -108,7 +108,7 @@ public:
     }
 
     bool purge() {
-        return dirq_purge(dirq) < 0;
+        return dirq_purge(dirq) >= 0;
     }
 
     int send(std::string const &msg) {
