@@ -24,9 +24,11 @@ namespace fts3 {
 namespace server {
 
 /**
- * The supervisor service consumes ping messages from fts_url_copy transfers to mark them as
- * alive. After a given amount of time passes without signal of life, CancelerService will reap
+ * The supervisor service consumes messages from fts_url_copy transfers.
+ * Ping messages: After a given amount of time passes without signal of life, CancelerService will reap
  * those stalled processes
+ * Log messages: Update on the DB the new location of the log file
+ * Status messages: Transfer status transition
  */
 class SupervisorService: public BaseService {
 protected:
