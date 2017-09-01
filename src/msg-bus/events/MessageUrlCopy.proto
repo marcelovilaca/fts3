@@ -21,4 +21,7 @@ message MessageUrlCopy {
     optional double throughput = 15;
 
     optional int32 errcode = 16;
+
+    optional string log_path = 17;
+    optional bool   has_debug_file = 18;
 }

@@ -29,7 +29,7 @@ private:
 
     MsgIfce msgIfce;
     fts3::events::ChannelFactory msgFactory;
-    std::unique_ptr<fts3::events::Producer> pingProducer, statusProducer, logProducer;
+    std::unique_ptr<fts3::events::Producer> pingProducer, statusProducer;
 
 public:
     LegacyReporter(const UrlCopyOpts &opts);

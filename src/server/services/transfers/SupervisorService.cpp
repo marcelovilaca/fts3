@@ -109,6 +109,9 @@ static void handleStatusUpdate(const events::MessageUrlCopy &event)
         event.job_id(), event.file_id(), event.throughput(), event.transfer_status(),
         event.transfer_message(), event.process_id(), event.filesize(), event.time_in_secs(), event.retry()
     );
+    if (!event.log_path().empty()) {
+        db->transferLogFile(event.file_id(), event.log_path(), event.has_debug_file());
+    }
 
     db->updateJobStatus(event.job_id(), event.transfer_status(), event.process_id());
 
@@ -151,7 +154,9 @@ static void logCallback(events::Consumer *consumer)
         << "Log for " << event.job_id() << "/" << event.file_id()
         << ": " << event.log_path()
         << commit;
-    db::DBSingleton::instance().getDBObjectInstance()->transferLogFile(event);
+    db::DBSingleton::instance().getDBObjectInstance()->transferLogFile(
+        event.file_id(), event.log_path(), event.has_debug_file()
+    );
 }
 
 void SupervisorService::runService()

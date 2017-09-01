@@ -2173,7 +2173,7 @@ void MySqlAPI::updateProtocol(const fts3::events::MessageUrlCopy& message)
 }
 
 
-void MySqlAPI::transferLogFile(const fts3::events::MessageLog &messageLog)
+void MySqlAPI::transferLogFile(uint64_t fileId, const std::string &path, bool hasDebug)
 {
     soci::session sql(*connectionPool);
     std::string filePath;
@@ -2181,8 +2181,7 @@ void MySqlAPI::transferLogFile(const fts3::events::MessageLog &messageLog)
     try
     {
         sql << "UPDATE t_file SET log_file = :path, log_file_debug = :debug WHERE file_id = :fileId",
-            soci::use(messageLog.log_path()), soci::use(static_cast<unsigned>(messageLog.has_debug_file())),
-            soci::use(messageLog.file_id());
+            soci::use(path), soci::use(static_cast<unsigned>(hasDebug)), soci::use(fileId);
     }
     catch (std::exception& e)
     {

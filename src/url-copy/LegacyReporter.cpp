@@ -49,24 +49,11 @@ LegacyReporter::LegacyReporter(const UrlCopyOpts &opts): opts(opts),
 {
     pingProducer = msgFactory.createProducer(events::UrlCopyPingChannel);
     statusProducer = msgFactory.createProducer(events::UrlCopyStatusChannel);
-    logProducer = msgFactory.createProducer(events::UrlCopyLogChannel);
 }
 
 
 void LegacyReporter::sendTransferStart(const Transfer &transfer, Gfal2TransferParams&)
 {
-    // Log file
-    events::MessageLog log;
-
-    log.set_timestamp(millisecondsSinceEpoch());
-    log.set_job_id(transfer.jobId);
-    log.set_file_id(transfer.fileId);
-    log.set_host(fts3::common::getFullHostname());
-    log.set_log_path(transfer.logFile);
-    log.set_has_debug_file(opts.debugLevel > 1);
-
-    logProducer->send(log);
-
     // Status
     events::MessageUrlCopy status;
 
@@ -77,6 +64,8 @@ void LegacyReporter::sendTransferStart(const Transfer &transfer, Gfal2TransferPa
     status.set_dest_se(transfer.destination.host);
     status.set_process_id(getpid());
     status.set_transfer_status("ACTIVE");
+    status.set_log_path(transfer.logFile);
+    status.set_has_debug_file(opts.debugLevel > 1);
 
     statusProducer->send(status);
 
@@ -138,18 +127,6 @@ void LegacyReporter::sendProtocol(const Transfer &transfer, Gfal2TransferParams 
 
 void LegacyReporter::sendTransferCompleted(const Transfer &transfer, Gfal2TransferParams &params)
 {
-    // Log file
-    events::MessageLog log;
-
-    log.set_timestamp(millisecondsSinceEpoch());
-    log.set_job_id(transfer.jobId);
-    log.set_file_id(transfer.fileId);
-    log.set_host(fts3::common::getFullHostname());
-    log.set_log_path(transfer.logFile);
-    log.set_has_debug_file(opts.debugLevel > 1);
-
-    logProducer->send(log);
-
     // Status
     events::MessageUrlCopy status;
 
@@ -161,6 +138,8 @@ void LegacyReporter::sendTransferCompleted(const Transfer &transfer, Gfal2Transf
     status.set_process_id(getpid());
     status.set_filesize(transfer.fileSize);
     status.set_time_in_secs(transfer.getTransferDurationInSeconds());
+    status.set_log_path(transfer.logFile);
+    status.set_has_debug_file(opts.debugLevel > 1);
 
     if (transfer.error) {
         std::stringstream fullErrMsg;

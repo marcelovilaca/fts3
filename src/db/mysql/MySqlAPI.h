@@ -186,7 +186,7 @@ public:
     virtual void updateFileTransferProgress(const fts3::events::MessageUrlCopyPing &message);
 
     /// Bulk update for log files
-    virtual void transferLogFile(const fts3::events::MessageLog &messageLog);
+    virtual void transferLogFile(uint64_t fileId, const std::string &path, bool hasDebug);
 
     /**
      * Signals that the server is alive

@@ -1,5 +1,8 @@
 package fts3.events;
 
+// Kept for 3.7 to 3.8 migration
+// To be removed, merged into MessageUrlCopy
+
 message MessageLog {
     required uint64 timestamp = 1;
 
