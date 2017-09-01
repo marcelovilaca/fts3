@@ -335,7 +335,9 @@ void ReuseTransfersService::startUrlCopy(std::string const & job_id, std::list<T
     }
     else
     {
-        db->setPidForJob(job_id, pr.getPid());
+        for (auto iterFileIds = fileIds.begin(); iterFileIds != fileIds.end(); ++iterFileIds) {
+            db->setPid(job_id, iterFileIds->first, pr.getPid());
+        }
     }
 
     for (auto iterFileIds = fileIds.begin(); iterFileIds != fileIds.end(); ++iterFileIds)

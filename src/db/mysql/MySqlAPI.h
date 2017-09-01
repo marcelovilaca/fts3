@@ -130,11 +130,11 @@ public:
     /// @param[out] transfers   An array with the expired transfers. Only jobId, fileId and pid are filled
     virtual void reapStalledTransfers(std::vector<TransferFile>& transfers);
 
-    /// Set the PID for all the files inside a reuse or multihop job
+    /// Set the PID for a files
     /// @param jobId    The job id for which the files will be updated
+    /// @param fileId   The file id
     /// @param pid      The process ID
-    /// @note           Transfers within reuse and multihop jobs go all together to a single fts_url_copy process
-    virtual void setPidForJob(const std::string& jobId, int pid);
+    virtual void setPid(const std::string& jobId, uint64_t fileId, int pid);
 
     /// Moves old transfer and job records to the archive tables
     /// Delete old entries in other tables (i.e. t_optimize_evolution)

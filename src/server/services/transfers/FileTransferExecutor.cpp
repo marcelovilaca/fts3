@@ -211,10 +211,7 @@ void FileTransferExecutor::run(boost::any & ctx)
                 }
             }
             else {
-                db->updateTransferStatus(
-                    tf.jobId, tf.fileId, 0.0, "READY", "",
-                    pr.getPid(), 0.0, 0.0, false
-                );
+                db->setPid(tf.jobId, tf.fileId, pr.getPid());
             }
 
             fts3::events::MessageUrlCopyPing msg;

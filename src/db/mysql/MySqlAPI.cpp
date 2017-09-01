@@ -1818,7 +1818,7 @@ bool MySqlAPI::terminateReuseProcess(const std::string & jobId, int pid, const s
 }
 
 
-void MySqlAPI::setPidForJob(const std::string& jobId, int pid)
+void MySqlAPI::setPid(const std::string& jobId, uint64_t fileId, int pid)
 {
     soci::session sql(*connectionPool);
 
@@ -1826,7 +1826,8 @@ void MySqlAPI::setPidForJob(const std::string& jobId, int pid)
     {
         sql.begin();
 
-        sql << "UPDATE t_file SET pid = :pid WHERE job_id = :jobId ", soci::use(pid), soci::use(jobId);
+        sql << "UPDATE t_file SET pid = :pid WHERE job_id = :jobId AND file_id = :fileId",
+            soci::use(pid), soci::use(jobId), soci::use(fileId);
 
         sql.commit();
     }
