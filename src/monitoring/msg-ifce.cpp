@@ -123,13 +123,12 @@ std::string MsgIfce::SendTransferStartMessage(const TransferCompleted &tr_starte
 
     std::string msgStr = stream.str();
     int errCode = monitoringQueue->send(msgStr);
-    if (errCode == 0) {
-        return msgStr;
-    }
-    else {
+    if (errCode != 0) {
         char buffer[512];
-        return strerror_r(errCode, buffer, sizeof(buffer));
+        strerror_r(errCode, buffer, sizeof(buffer));
+        throw fts3::common::SystemError(buffer);
     }
+    return msgStr;
 }
 
 
@@ -220,13 +219,12 @@ std::string MsgIfce::SendTransferFinishMessage(const TransferCompleted &tr_compl
 
     std::string msgStr = stream.str();
     int errCode = monitoringQueue->send(msgStr);
-    if (errCode == 0) {
-        return msgStr;
-    }
-    else {
+    if (errCode != 0) {
         char buffer[512];
-        return strerror_r(errCode, buffer, sizeof(buffer));
+        strerror_r(errCode, buffer, sizeof(buffer));
+        throw fts3::common::SystemError(buffer);
     }
+    return msgStr;
 }
 
 
@@ -264,13 +262,12 @@ std::string MsgIfce::SendTransferStatusChange(const TransferState &tr_state)
 
     std::string msgStr = stream.str();
     int errCode = monitoringQueue->send(msgStr);
-    if (errCode == 0) {
-        return msgStr;
-    }
-    else {
+    if (errCode != 0) {
         char buffer[512];
-        return strerror_r(errCode, buffer, sizeof(buffer));
+        strerror_r(errCode, buffer, sizeof(buffer));
+        throw fts3::common::SystemError(buffer);
     }
+    return msgStr;
 }
 
 
@@ -306,11 +303,10 @@ std::string MsgIfce::SendOptimizer(const OptimizerInfo &opt_info)
 
     std::string msgStr = stream.str();
     int errCode = monitoringQueue->send(msgStr);
-    if (errCode == 0) {
-        return msgStr;
-    }
-    else {
+    if (errCode != 0) {
         char buffer[512];
-        return strerror_r(errCode, buffer, sizeof(buffer));
+        strerror_r(errCode, buffer, sizeof(buffer));
+        throw fts3::common::SystemError(buffer);
     }
+    return msgStr;
 }
