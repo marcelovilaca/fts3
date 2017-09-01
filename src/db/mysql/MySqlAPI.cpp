@@ -1601,48 +1601,14 @@ bool MySqlAPI::updateJobTransferStatusInternal(soci::session& sql, std::string j
 }
 
 
-void MySqlAPI::updateFileTransferProgressVector(const std::vector<fts3::events::MessageUpdater>& messages)
+void MySqlAPI::updateFileTransferProgress(const fts3::events::MessageUpdater &message)
 {
     soci::session sql(*connectionPool);
 
     try
     {
-        double throughput = 0.0;
-        double transferred = 0.0;
-        uint64_t file_id = 0;
-        std::string file_state;
-
-        soci::statement stmt = (sql.prepare << "UPDATE t_file SET throughput = :throughput, transferred = :transferred WHERE file_id = :fileId ",
-                                soci::use(throughput), soci::use(transferred), soci::use(file_id));
-
-        sql.begin();
-
-        for (auto iter = messages.begin(); iter != messages.end(); ++iter)
-        {
-            throughput = 0.0;
-            transferred = 0.0;
-            file_id = 0;
-            file_state = "";
-
-            if ((*iter).file_id() > 0)
-            {
-                file_state = (*iter).transfer_status();
-
-                if(file_state == "ACTIVE")
-                {
-                    file_id = (*iter).file_id();
-
-                    if((*iter).throughput() > 0.0 && file_id > 0 )
-                    {
-                        throughput = (*iter).throughput();
-                        transferred = (*iter).transferred();
-                        stmt.execute(true);
-                    }
-                }
-            }
-        }
-
-        sql.commit();
+        sql << "UPDATE t_file SET throughput = :throughput, transferred = :transferred WHERE file_id = :fileId",
+            soci::use(message.throughput()), soci::use(message.transferred()), soci::use(message.file_id());
     }
     catch (std::exception& e)
     {
@@ -2179,43 +2145,19 @@ void MySqlAPI::setToFailOldQueuedJobs(std::vector<std::string>& jobs)
 }
 
 
-void MySqlAPI::updateProtocol(const std::vector<fts3::events::MessageUrlCopy>& messages)
+void MySqlAPI::updateProtocol(const fts3::events::MessageUrlCopy& message)
 {
     soci::session sql(*connectionPool);
 
-    std::stringstream internalParams;
-    double filesize = 0;
-    uint64_t fileId = 0;
-    std::string params;
-
-    soci::statement stmt = (
-        sql.prepare << "UPDATE t_file set INTERNAL_FILE_PARAMS=:1, FILESIZE=:2 where file_id=:fileId ",
-        soci::use(params),
-        soci::use(filesize),
-        soci::use(fileId));
-
     try
     {
-        sql.begin();
+        std::stringstream internalParams;
+        internalParams << "nostreams:" << static_cast<int> (message.nostreams())
+                       << ",timeout:" << static_cast<int> (message.timeout())
+                       << ",buffersize:" << static_cast<int> (message.buffersize());
 
-        for (auto iter = messages.begin(); iter != messages.end(); ++iter)
-        {
-            internalParams.str(std::string());
-            internalParams.clear();
-
-            auto msg = *iter;
-            if(msg.transfer_status().compare("UPDATE") == 0)
-            {
-                fileId = msg.file_id();
-                filesize = msg.filesize();
-                internalParams << "nostreams:" << static_cast<int> (msg.nostreams())
-                << ",timeout:" << static_cast<int> (msg.timeout())
-                << ",buffersize:" << static_cast<int> (msg.buffersize());
-                params = internalParams.str();
-                stmt.execute(true);
-            }
-        }
-        sql.commit();
+        sql << "UPDATE t_file set INTERNAL_FILE_PARAMS=:1, FILESIZE=:2 where file_id=:fileId",
+            soci::use(internalParams.str()), soci::use(message.filesize()), soci::use(message.filesize());
 
     }
     catch (std::exception& e)
@@ -2231,32 +2173,16 @@ void MySqlAPI::updateProtocol(const std::vector<fts3::events::MessageUrlCopy>& m
 }
 
 
-void MySqlAPI::transferLogFileVector(const std::vector<fts3::events::MessageLog>& messagesLog)
+void MySqlAPI::transferLogFile(const fts3::events::MessageLog &messageLog)
 {
     soci::session sql(*connectionPool);
     std::string filePath;
 
-    //soci doesn't access bool
-    unsigned int debugFile = 0;
-    uint64_t fileId = 0;
-
     try
     {
-        soci::statement stmt = (sql.prepare << " update t_file set log_file=:filePath, log_file_debug=:debugFile where file_id=:fileId ",
-                                soci::use(filePath),
-                                soci::use(debugFile),
-                                soci::use(fileId));
-
-        sql.begin();
-
-        for (auto i = messagesLog.begin(); i != messagesLog.end(); ++i) {
-            filePath = i->log_path();
-            fileId = i->file_id();
-            debugFile = i->has_debug_file();
-            stmt.execute(true);
-        }
-
-        sql.commit();
+        sql << "UPDATE t_file SET log_file = :path, log_file_debug = :debug WHERE file_id = :fileId",
+            soci::use(messageLog.log_path()), soci::use(static_cast<unsigned>(messageLog.has_debug_file())),
+            soci::use(messageLog.file_id());
     }
     catch (std::exception& e)
     {

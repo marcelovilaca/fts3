@@ -184,7 +184,7 @@ void FileTransferExecutor::run(boost::any & ctx)
             protoMsg.set_buffersize(cmdBuilder.getBuffersize());
             protoMsg.set_nostreams(cmdBuilder.getNoStreams());
             protoMsg.set_timeout(cmdBuilder.getTimeout());
-            db->updateProtocol(std::vector<events::MessageUrlCopy>{protoMsg});
+            db->updateProtocol(protoMsg);
 
             // Send current state before forking (while it is in READY)
             SingleTrStateInstance::instance().sendStateMessage(tf.jobId, tf.fileId);

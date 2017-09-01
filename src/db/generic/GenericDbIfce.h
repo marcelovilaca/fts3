@@ -205,7 +205,7 @@ public:
     virtual void setToFailOldQueuedJobs(std::vector<std::string>& jobs) = 0;
 
     /// Update the protocol parameters used for each transfer
-    virtual void updateProtocol(const std::vector<fts3::events::MessageUrlCopy>& tempProtocol) = 0;
+    virtual void updateProtocol(const fts3::events::MessageUrlCopy& protocol) = 0;
 
     /// Get the state the transfer identified by jobId/fileId
     virtual std::vector<TransferState> getStateOfTransfer(const std::string& jobId, uint64_t fileId) = 0;
@@ -222,10 +222,10 @@ public:
         int errcode) = 0;
 
     /// Bulk update of transfer progress
-    virtual void updateFileTransferProgressVector(const std::vector<fts3::events::MessageUpdater> &messages) = 0;
+    virtual void updateFileTransferProgress(const fts3::events::MessageUpdater &progress) = 0;
 
     /// Bulk update for log files
-    virtual void transferLogFileVector(const std::vector<fts3::events::MessageLog>& messagesLog) = 0;
+    virtual void transferLogFile(const fts3::events::MessageLog &messageLog) = 0;
 
     /**
      * Signals that the server is alive

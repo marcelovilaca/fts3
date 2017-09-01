@@ -338,9 +338,7 @@ void ReuseTransfersService::startUrlCopy(std::string const & job_id, std::list<T
         db->setPidForJob(job_id, pr.getPid());
     }
 
-    std::map<uint64_t, std::string>::const_iterator iterFileIds;
-    std::vector<events::MessageUrlCopy> protoMsgs;
-    for (iterFileIds = fileIds.begin(); iterFileIds != fileIds.end(); ++iterFileIds)
+    for (auto iterFileIds = fileIds.begin(); iterFileIds != fileIds.end(); ++iterFileIds)
     {
         fts3::events::MessageUpdater msg2;
         msg2.set_job_id(job_id);
@@ -355,11 +353,9 @@ void ReuseTransfersService::startUrlCopy(std::string const & job_id, std::list<T
         protoMsg.set_timeout(cmdBuilder.getTimeout());
         protoMsg.set_buffersize(cmdBuilder.getBuffersize());
         protoMsg.set_nostreams(cmdBuilder.getNoStreams());
-        protoMsgs.push_back(protoMsg);
-    }
 
-    // Set known protocol settings
-    db::DBSingleton::instance().getDBObjectInstance()->updateProtocol(protoMsgs);
+        db::DBSingleton::instance().getDBObjectInstance()->updateProtocol(protoMsg);
+    }
 }
 
 

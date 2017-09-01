@@ -52,8 +52,7 @@ static void pingCallback(events::Consumer *consumer)
         << commit;
     ThreadSafeList::get_instance().updateMsg(event);
 
-    std::vector<events::MessageUpdater> events{event};
-    db::DBSingleton::instance().getDBObjectInstance()->updateFileTransferProgressVector(events);
+    db::DBSingleton::instance().getDBObjectInstance()->updateFileTransferProgress(event);
 }
 
 /// Handle updates for the protocol data
@@ -62,8 +61,7 @@ static void handleProtocolUpdate(const events::MessageUrlCopy &event)
     FTS3_COMMON_LOGGER_NEWLOG(DEBUG)
         << "Protocol update for " << event.job_id() << "/" << event.file_id() << commit;
 
-    std::vector<events::MessageUrlCopy> events{event};
-    db::DBSingleton::instance().getDBObjectInstance()->updateProtocol(events);
+    db::DBSingleton::instance().getDBObjectInstance()->updateProtocol(event);
 }
 
 /// Handle new states of a transfer
@@ -153,8 +151,7 @@ static void logCallback(events::Consumer *consumer)
         << "Log for " << event.job_id() << "/" << event.file_id()
         << ": " << event.log_path()
         << commit;
-    std::vector<events::MessageLog> events{event};
-    db::DBSingleton::instance().getDBObjectInstance()->transferLogFileVector(events);
+    db::DBSingleton::instance().getDBObjectInstance()->transferLogFile(event);
 }
 
 void SupervisorService::runService()
