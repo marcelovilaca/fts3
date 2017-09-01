@@ -2908,7 +2908,6 @@ void MySqlAPI::updateDeletionsStateInternal(soci::session& sql, const std::vecto
 void MySqlAPI::getFilesForDeletion(std::vector<DeleteOperation>& delOps)
 {
     soci::session sql(*connectionPool);
-    std::vector<fts3::events::MessageBringonline> messages;
     std::vector<MinFileStatus> filesState;
 
     Consumer consumer(ServerConfig::instance().get<std::string>("MessagingDirectory"));
@@ -3085,7 +3084,6 @@ void MySqlAPI::getFilesForStaging(std::vector<StagingOperation> &stagingOps)
 {
     soci::session sql(*connectionPool);
     std::vector<MinFileStatus> filesState;
-    std::vector<fts3::events::MessageBringonline> messages;
 
     Consumer consumer(ServerConfig::instance().get<std::string>("MessagingDirectory"));
     int maxStagingBulkSize = ServerConfig::instance().get<int>("StagingBulkSize");
