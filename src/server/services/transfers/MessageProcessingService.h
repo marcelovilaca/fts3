@@ -26,6 +26,7 @@
 #define PROCESSQUEUE_H_
 
 #include <vector>
+#include <msg-bus/Channel.h>
 
 #include "msg-bus/consumer.h"
 #include "../BaseService.h"
@@ -41,9 +42,9 @@ private:
     std::vector<fts3::events::MessageLog> messagesLog;
 
     Consumer consumer;
+    events::ChannelFactory msgFactory;
 
 public:
-
     /// Constructor
     MessageProcessingService();
 
@@ -51,10 +52,6 @@ public:
     virtual ~MessageProcessingService();
 
     virtual void runService();
-
-private:
-    void updateDatabase(const fts3::events::MessageUrlCopy& msg);
-    void executeUpdate(const std::vector<fts3::events::MessageUrlCopy>& messages);
 };
 
 } // end namespace server
