@@ -217,7 +217,7 @@ void FileTransferExecutor::run(boost::any & ctx)
                 );
             }
 
-            fts3::events::MessageUpdater msg;
+            fts3::events::MessageUrlCopyPing msg;
             msg.set_job_id(tf.jobId);
             msg.set_file_id(tf.fileId);
             msg.set_process_id(pr.getPid());

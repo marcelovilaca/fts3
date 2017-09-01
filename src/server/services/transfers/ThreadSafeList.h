@@ -40,16 +40,16 @@ public:
     ThreadSafeList();
     ~ThreadSafeList();
 
-    void push_back(fts3::events::MessageUpdater &msg);
+    void push_back(fts3::events::MessageUrlCopyPing &msg);
     void clear();
-    void updateMsg(fts3::events::MessageUpdater &msg);
-    void checkExpiredMsg(std::vector<fts3::events::MessageUpdater>& messages,
+    void updateMsg(fts3::events::MessageUrlCopyPing &msg);
+    void checkExpiredMsg(std::vector<fts3::events::MessageUrlCopyPing>& messages,
         boost::posix_time::time_duration timeout);
-    void deleteMsg(std::vector<fts3::events::MessageUpdater>& messages);
+    void deleteMsg(std::vector<fts3::events::MessageUrlCopyPing>& messages);
     void removeFinishedTr(std::string job_id, uint64_t file_id);
 
 private:
-    std::list<fts3::events::MessageUpdater> m_list;
+    std::list<fts3::events::MessageUrlCopyPing> m_list;
     mutable boost::recursive_timed_mutex _mutex;
 };
 

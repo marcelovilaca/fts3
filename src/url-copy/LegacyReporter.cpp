@@ -293,18 +293,13 @@ void LegacyReporter::sendTransferCompleted(const Transfer &transfer, Gfal2Transf
 
 void LegacyReporter::sendPing(const Transfer &transfer)
 {
-    events::MessageUpdater ping;
+    events::MessageUrlCopyPing ping;
     ping.set_timestamp(millisecondsSinceEpoch());
     ping.set_job_id(transfer.jobId);
     ping.set_file_id(transfer.fileId);
-    ping.set_transfer_status("ACTIVE");
-    ping.set_source_surl(transfer.source.fullUri);
-    ping.set_dest_surl(transfer.destination.fullUri);
     ping.set_process_id(getpid());
     ping.set_throughput(transfer.throughput / 1024.0);
     ping.set_transferred(transfer.transferredBytes);
-    ping.set_source_turl("gsiftp:://fake");
-    ping.set_dest_turl("gsiftp:://fake");
 
     try {
         pingProducer->send(ping, false);

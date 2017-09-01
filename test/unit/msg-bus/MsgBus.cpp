@@ -52,7 +52,7 @@ protected:
     ChannelFactory factory;
 
     std::vector<MessageUrlCopy> receivedStatus;
-    std::vector<MessageUpdater> receivedPing;
+    std::vector<MessageUrlCopyPing> receivedPing;
 
 public:
     MsgBusFixture(): factory(TEST_PATH) {
@@ -70,7 +70,7 @@ public:
     }
 
     void consumePing(Consumer *consumer) {
-        MessageUpdater msg;
+        MessageUrlCopyPing msg;
         consumer->receive(&msg, false);
         receivedPing.emplace_back(msg);
     }
@@ -184,15 +184,10 @@ BOOST_FIXTURE_TEST_CASE (pollTwo, MsgBusFixture)
     original.set_throughput(0.88);
     BOOST_CHECK(producerStatus->send(original));
 
-    MessageUpdater originalPing;
+    MessageUrlCopyPing originalPing;
     originalPing.set_job_id("7b747d24-8d8e-11e7-b4c3-02163e006dd0");
     originalPing.set_file_id(1234);
     originalPing.set_timestamp(15689);
-    originalPing.set_transfer_status("UPDATE");
-    originalPing.set_source_surl("mock://source/file");
-    originalPing.set_dest_surl("mock://source/file2");
-    originalPing.set_source_turl("");
-    originalPing.set_dest_turl("");
     originalPing.set_process_id(1);
     originalPing.set_throughput(0.5);
     originalPing.set_transferred(4242);

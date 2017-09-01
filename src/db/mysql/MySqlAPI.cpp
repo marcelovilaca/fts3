@@ -237,7 +237,7 @@ void MySqlAPI::init(const std::string& username, const std::string& password,
 }
 
 
-std::list<fts3::events::MessageUpdater> MySqlAPI::getActiveInHost(const std::string &host)
+std::list<fts3::events::MessageUrlCopyPing> MySqlAPI::getActiveInHost(const std::string &host)
 {
     soci::session sql(*connectionPool);
 
@@ -248,10 +248,10 @@ std::list<fts3::events::MessageUpdater> MySqlAPI::getActiveInHost(const std::str
             soci::use(host)
         );
 
-        std::list<fts3::events::MessageUpdater> msgs;
+        std::list<fts3::events::MessageUrlCopyPing> msgs;
 
         for (auto i = rs.begin(); i != rs.end(); ++i) {
-            fts3::events::MessageUpdater msg;
+            fts3::events::MessageUrlCopyPing msg;
 
             msg.set_job_id(i->get<std::string>("job_id"));
             msg.set_file_id(i->get<unsigned long long>("file_id"));
@@ -1601,7 +1601,7 @@ bool MySqlAPI::updateJobTransferStatusInternal(soci::session& sql, std::string j
 }
 
 
-void MySqlAPI::updateFileTransferProgress(const fts3::events::MessageUpdater &message)
+void MySqlAPI::updateFileTransferProgress(const fts3::events::MessageUrlCopyPing &message)
 {
     soci::session sql(*connectionPool);
 

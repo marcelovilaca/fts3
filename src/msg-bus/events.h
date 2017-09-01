@@ -19,7 +19,7 @@
 
 #include <msg-bus/events/MessageUrlCopy.pb.h>
 #include <msg-bus/events/MessageLog.pb.h>
-#include <msg-bus/events/MessageUpdater.pb.h>
+#include <msg-bus/events/MessageUrlCopyPing.pb.h>
 #include <msg-bus/events/TransferStart.pb.h>
 #include <msg-bus/events/TransferCompleted.pb.h>
 

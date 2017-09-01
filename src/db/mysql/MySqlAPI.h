@@ -47,7 +47,7 @@ public:
         const std::string& connectString, int nPooledConnections);
 
     /// Recover from the DB transfers marked as ACTIVE for the host 'host'
-    virtual std::list<fts3::events::MessageUpdater> getActiveInHost(const std::string &host);
+    virtual std::list<fts3::events::MessageUrlCopyPing> getActiveInHost(const std::string &host);
 
     /// Get a list of transfers ready to go for the given queues
     /// When session reuse is enabled for a job, all the files belonging to that job should run at once
@@ -183,7 +183,7 @@ public:
         int errcode);
 
     /// Bulk update of transfer progress
-    virtual void updateFileTransferProgress(const fts3::events::MessageUpdater &message);
+    virtual void updateFileTransferProgress(const fts3::events::MessageUrlCopyPing &message);
 
     /// Bulk update for log files
     virtual void transferLogFile(const fts3::events::MessageLog &messageLog);

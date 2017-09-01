@@ -340,7 +340,7 @@ void ReuseTransfersService::startUrlCopy(std::string const & job_id, std::list<T
 
     for (auto iterFileIds = fileIds.begin(); iterFileIds != fileIds.end(); ++iterFileIds)
     {
-        fts3::events::MessageUpdater msg2;
+        fts3::events::MessageUrlCopyPing msg2;
         msg2.set_job_id(job_id);
         msg2.set_file_id(iterFileIds->first);
         msg2.set_process_id(pr.getPid());

@@ -56,7 +56,7 @@ void CancelerService::markAsStalled()
     auto db = DBSingleton::instance().getDBObjectInstance();
     const boost::posix_time::seconds timeout(ServerConfig::instance().get<int>("CheckStalledTimeout"));
 
-    std::vector<fts3::events::MessageUpdater> messages;
+    std::vector<fts3::events::MessageUrlCopyPing> messages;
     messages.reserve(500);
     ThreadSafeList::get_instance().checkExpiredMsg(messages, timeout);
 
@@ -136,7 +136,7 @@ void CancelerService::applyActiveTimeouts()
 
     db->reapStalledTransfers(stalled);
 
-    std::vector<fts3::events::MessageUpdater> messages;
+    std::vector<fts3::events::MessageUrlCopyPing> messages;
 
     for (auto i = stalled.begin(); i != stalled.end(); ++i) {
         if (i->pid > 0) {
@@ -156,7 +156,7 @@ void CancelerService::applyActiveTimeouts()
         db->updateJobStatus(i->jobId, "FAILED", i->pid);
         SingleTrStateInstance::instance().sendStateMessage(i->jobId, i->fileId);
 
-        fts3::events::MessageUpdater msg;
+        fts3::events::MessageUrlCopyPing msg;
         msg.set_job_id(i->jobId);
         msg.set_file_id(i->fileId);
 
@@ -172,7 +172,7 @@ static void recoverProcessesFromDb()
 {
     auto actives = DBSingleton::instance().getDBObjectInstance()->getActiveInHost(getFullHostname());
     for (auto i = actives.begin(); i != actives.end(); ++i) {
-        const fts3::events::MessageUpdater &msg = *i;
+        const fts3::events::MessageUrlCopyPing &msg = *i;
         ThreadSafeList::get_instance().push_back(*i);
         FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Adding to watchlist from DB: "
             << msg.job_id() << " / " << msg.file_id() << commit;

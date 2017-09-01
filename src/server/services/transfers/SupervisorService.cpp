@@ -36,7 +36,7 @@ SupervisorService::SupervisorService(): BaseService("SupervisorService"),
 /// Handle ping messages
 static void pingCallback(events::Consumer *consumer)
 {
-    events::MessageUpdater event;
+    events::MessageUrlCopyPing event;
     if (!consumer->receive(&event)) {
         return;
     }

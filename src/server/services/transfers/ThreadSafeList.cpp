@@ -39,7 +39,7 @@ ThreadSafeList::~ThreadSafeList()
 }
 
 
-void ThreadSafeList::push_back(fts3::events::MessageUpdater &msg)
+void ThreadSafeList::push_back(fts3::events::MessageUrlCopyPing &msg)
 {
     if (!_mutex.timed_lock(boost::posix_time::seconds(10))) {
         throw SystemError(std::string(__func__) + ": Mutex timeout expired");
@@ -59,7 +59,7 @@ void ThreadSafeList::clear()
 }
 
 
-void ThreadSafeList::checkExpiredMsg(std::vector<fts3::events::MessageUpdater> &messages,
+void ThreadSafeList::checkExpiredMsg(std::vector<fts3::events::MessageUrlCopyPing> &messages,
     boost::posix_time::time_duration timeout)
 {
     static const boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
@@ -88,16 +88,15 @@ void ThreadSafeList::checkExpiredMsg(std::vector<fts3::events::MessageUpdater> &
 }
 
 
-void ThreadSafeList::updateMsg(fts3::events::MessageUpdater &msg)
+void ThreadSafeList::updateMsg(fts3::events::MessageUrlCopyPing &msg)
 {
     if (!_mutex.timed_lock(boost::posix_time::seconds(10))) {
         throw SystemError(std::string(__func__) + ": Mutex timeout expired");
     }
 
     try {
-        std::list<fts3::events::MessageUpdater>::iterator iter;
         uint64_t pidStartTime = fts3::common::getPidStartime(msg.process_id());
-        for (iter = m_list.begin(); iter != m_list.end(); ++iter) {
+        for (auto iter = m_list.begin(); iter != m_list.end(); ++iter) {
 
             if (msg.process_id() == iter->process_id()) {
                 if (pidStartTime > 0 && msg.timestamp() >= pidStartTime) {
@@ -120,14 +119,14 @@ void ThreadSafeList::updateMsg(fts3::events::MessageUpdater &msg)
 }
 
 
-void ThreadSafeList::deleteMsg(std::vector<fts3::events::MessageUpdater> &messages)
+void ThreadSafeList::deleteMsg(std::vector<fts3::events::MessageUrlCopyPing> &messages)
 {
     if (!_mutex.timed_lock(boost::posix_time::seconds(10))) {
         throw SystemError(std::string(__func__) + ": Mutex timeout expired");
     }
 
     try {
-        std::list<fts3::events::MessageUpdater>::iterator i = m_list.begin();
+        std::list<fts3::events::MessageUrlCopyPing>::iterator i = m_list.begin();
         for (auto iter = messages.begin(); iter != messages.end(); ++iter) {
             i = m_list.begin();
             while (i != m_list.end()) {
@@ -155,7 +154,7 @@ void ThreadSafeList::removeFinishedTr(std::string job_id, uint64_t file_id)
     }
 
     try {
-        std::list<fts3::events::MessageUpdater>::iterator i = m_list.begin();
+        std::list<fts3::events::MessageUrlCopyPing>::iterator i = m_list.begin();
         while (i != m_list.end()) {
             if (file_id == i->file_id() && job_id == i->job_id()) {
                 m_list.erase(i++);
