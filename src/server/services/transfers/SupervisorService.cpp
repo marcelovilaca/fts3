@@ -37,22 +37,20 @@ SupervisorService::SupervisorService(): BaseService("SupervisorService"),
 static void pingCallback(events::Consumer *consumer)
 {
     events::MessageUrlCopyPing event;
-    if (!consumer->receive(&event)) {
-        return;
+    while (consumer->receive(&event, false)) {
+        FTS3_COMMON_LOGGER_NEWLOG(INFO)
+            << "Process Updater Monitor "
+            << "\nJob id: " << event.job_id()
+            << "\nFile id: " << event.file_id()
+            << "\nPid: " << event.process_id()
+            << "\nTimestamp: " << event.timestamp()
+            << "\nThroughput: " << event.throughput()
+            << "\nTransferred: " << event.transferred()
+            << commit;
+        ThreadSafeList::get_instance().updateMsg(event);
+
+        db::DBSingleton::instance().getDBObjectInstance()->updateFileTransferProgress(event);
     }
-
-    FTS3_COMMON_LOGGER_NEWLOG(INFO)
-        << "Process Updater Monitor "
-        << "\nJob id: " << event.job_id()
-        << "\nFile id: " << event.file_id()
-        << "\nPid: " << event.process_id()
-        << "\nTimestamp: " << event.timestamp()
-        << "\nThroughput: " << event.throughput()
-        << "\nTransferred: " << event.transferred()
-        << commit;
-    ThreadSafeList::get_instance().updateMsg(event);
-
-    db::DBSingleton::instance().getDBObjectInstance()->updateFileTransferProgress(event);
 }
 
 /// Handle updates for the protocol data
@@ -131,15 +129,13 @@ static void handleStatusUpdate(const events::MessageUrlCopy &event)
 static void statusCallback(events::Consumer *consumer)
 {
     events::MessageUrlCopy event;
-    if (!consumer->receive(&event)) {
-        return;
-    }
-
-    if (event.transfer_status() == "UPDATE") {
-        handleProtocolUpdate(event);
-    }
-    else {
-        handleStatusUpdate(event);
+    while (consumer->receive(&event, false)) {
+        if (event.transfer_status() == "UPDATE") {
+            handleProtocolUpdate(event);
+        }
+        else {
+            handleStatusUpdate(event);
+        }
     }
 }
 
@@ -147,16 +143,15 @@ static void statusCallback(events::Consumer *consumer)
 static void logCallback(events::Consumer *consumer)
 {
     events::MessageLog event;
-    if (!consumer->receive(&event)) {
-        return;
+    while(consumer->receive(&event, false)) {
+        FTS3_COMMON_LOGGER_NEWLOG(DEBUG)
+            << "Log for " << event.job_id() << "/" << event.file_id()
+            << ": " << event.log_path()
+            << commit;
+        db::DBSingleton::instance().getDBObjectInstance()->transferLogFile(
+            event.file_id(), event.log_path(), event.has_debug_file()
+        );
     }
-    FTS3_COMMON_LOGGER_NEWLOG(DEBUG)
-        << "Log for " << event.job_id() << "/" << event.file_id()
-        << ": " << event.log_path()
-        << commit;
-    db::DBSingleton::instance().getDBObjectInstance()->transferLogFile(
-        event.file_id(), event.log_path(), event.has_debug_file()
-    );
 }
 
 void SupervisorService::runService()
