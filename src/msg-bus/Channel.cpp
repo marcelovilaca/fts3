@@ -80,7 +80,7 @@ std::unique_ptr<Producer> ChannelFactory::createProducer(const std::string &name
 }
 
 
-std::unique_ptr<Consumer> ChannelFactory::createConsumer(const std::string &name, bool listen)
+std::unique_ptr<Consumer> ChannelFactory::createConsumer(const std::string &name, uint64_t limit, bool listen)
 {
     zmq::socket_t zmqSocket(zmqContext, ZMQ_PULL);
     auto fullPath = baseDir / name;
@@ -92,7 +92,7 @@ std::unique_ptr<Consumer> ChannelFactory::createConsumer(const std::string &name
     else {
         zmqSocket.connect(address.c_str());
     }
-
+    zmqSocket.setsockopt(ZMQ_HWM, &limit, sizeof(limit));
     return std::unique_ptr<Consumer>(new Consumer{std::move(zmqSocket)});
 }
 

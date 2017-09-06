@@ -92,9 +92,10 @@ public:
 
     /// Create a new consumer
     /// @param name     The channel name
+    /// @param limit    Incoming limit
     /// @param listen   If true, the consumer will bind to the socket. If false, it will connect.
     /// @note           Make sure either the consumer or producer listens
-    std::unique_ptr<Consumer> createConsumer(const std::string &name, bool listen = true);
+    std::unique_ptr<Consumer> createConsumer(const std::string &name, uint64_t limit = 1, bool listen = true);
 };
 
 /// Poller allows to poll multiple consumers, so the client code can demultiplex
