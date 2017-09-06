@@ -259,7 +259,8 @@ void MsgOutboundStomp::onException(const cms::CMSException &ex AMQCPP_UNUSED)
 
 void MsgOutboundStomp::run()
 {
-    while (stopThreads == false) {
+    zmq::message_t msg;
+    while (true) {
         try {
             if (!connected) {
                 cleanup();
@@ -275,21 +276,23 @@ void MsgOutboundStomp::run()
             }
 
             //send messages
-            zmq::message_t msg;
-            while (subscribeSocket.recv(&msg, ZMQ_NOBLOCK)) {
-                if (msg.size()) {
-                    routeMessage(msg);
-                }
+            subscribeSocket.recv(&msg);
+            if (msg.size()) {
+                routeMessage(msg);
             }
-
-            usleep(100);
         }
-        catch (cms::CMSException &e) {
+        catch (const zmq::error_t &e) {
+            if (e.num() == ETERM) {
+                break;
+            }
+            FTS3_COMMON_LOGGER_LOG(ERR, e.what());
+        }
+        catch (const cms::CMSException &e) {
             FTS3_COMMON_LOGGER_LOG(ERR, e.getMessage());
             connected = false;
             sleep(5);
         }
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             FTS3_COMMON_LOGGER_LOG(ERR, e.what());
             connected = false;
             sleep(5);

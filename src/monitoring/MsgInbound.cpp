@@ -24,8 +24,6 @@
 
 #include "common/Logger.h"
 
-extern bool stopThreads;
-
 namespace fs = boost::filesystem;
 
 
@@ -90,7 +88,11 @@ int MsgInbound::consume()
 
 void MsgInbound::run()
 {
-    while (stopThreads == false) {
+    int type;
+    size_t typeSize = sizeof(type);
+
+    // Dirty hack to check if the context is still alive
+    while (zmq_getsockopt(static_cast<void*>(publishSocket), ZMQ_TYPE, &type, &typeSize) == 0) {
         try {
             int returnValue = consume();
             if (returnValue != 0) {
@@ -98,6 +100,12 @@ void MsgInbound::run()
                 errorMessage << "runConsumerMonitoring returned " << returnValue;
                 FTS3_COMMON_LOGGER_LOG(ERR, errorMessage.str());
             }
+        }
+        catch (const zmq::error_t &ex) {
+            if (ex.num() == ETERM) {
+                break;
+            }
+            FTS3_COMMON_LOGGER_LOG(ERR, ex.what());
         }
         catch (const fs::filesystem_error &ex) {
             FTS3_COMMON_LOGGER_LOG(ERR, ex.what());

@@ -76,6 +76,9 @@ public:
 
     /// Password for the client cert and private key
     std::string GetClientKeyStorePassword() const;
+
+    /// Where to bind the internal publisher socket
+    std::string GetTCPAdress() const;
 };
 
 

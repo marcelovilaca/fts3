@@ -32,11 +32,13 @@
 #include "BrokerConfig.h"
 #include "MsgInbound.h"
 #include "MsgOutboundStomp.h"
+#include "MsgOutboundTCP.h"
 
 using namespace fts3::common;
 using namespace fts3::config;
 
-bool stopThreads = false;
+// Shared ZeroMQ context
+std::unique_ptr<zmq::context_t> zmqContext(new zmq::context_t(1));
 
 
 static void shutdown_callback(int signum, void*)
@@ -45,7 +47,8 @@ static void shutdown_callback(int signum, void*)
                                        << " (" << strsignal(signum) << ")" << commit;
     FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Future signals will be ignored!" << commit;
     FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Messaging server stopping" << commit;
-    stopThreads = true;
+
+    zmqContext.reset(NULL);
 
     // Some require traceback
     switch (signum)
@@ -69,6 +72,8 @@ static void DoServer(bool isDaemon) throw()
     try {
         BrokerConfig config(ServerConfig::instance().get<std::string>("MonitoringConfigFile"));
         const std::string monitoringMsgDir = ServerConfig::instance().get<std::string>("MessagingDirectory");
+
+        const std::string bindAddress = config.GetTCPAdress();
         const std::string logFile = config.GetLogFilePath();
 
         if (isDaemon) {
@@ -84,11 +89,9 @@ static void DoServer(bool isDaemon) throw()
 
         activemq::library::ActiveMQCPP::initializeLibrary();
 
-        // Shared ZeroMQ context
-        zmq::context_t zmqContext(0);
-
-        MsgInbound pipeMsg(monitoringMsgDir, zmqContext);
-        MsgOutboundStomp stompProducer(zmqContext, config);
+        MsgInbound pipeMsg(monitoringMsgDir, *zmqContext);
+        MsgOutboundStomp stompProducer(*zmqContext, config);
+        MsgOutboundTCP tcpProducer(*zmqContext, bindAddress);
 
         boost::thread_group threads;
         threads.add_thread(
@@ -96,6 +99,9 @@ static void DoServer(bool isDaemon) throw()
         );
         threads.add_thread(
             new boost::thread(boost::bind(&MsgOutboundStomp::run, &stompProducer))
+        );
+        threads.add_thread(
+            new boost::thread(boost::bind(&MsgOutboundTCP::run, &tcpProducer))
         );
 
         FTS3_COMMON_LOGGER_LOG(INFO, "Threads started");

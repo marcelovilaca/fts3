@@ -121,6 +121,11 @@ BrokerConfig::BrokerConfig(const std::string &path)
         po::value<std::string>()->default_value("transfer.fts_monitoring_queue_state"),
         "Destination for optimizer messages"
     )
+    (
+        "ZMQ_PUB_LISTEN",
+        po::value<std::string>()->default_value("0.0.0.0:3694"),
+        "ZeroMQ publisher bind address"
+    )
     ;
 
     std::ifstream in(path.c_str());
@@ -236,4 +241,9 @@ std::string BrokerConfig::GetClientKeyStore() const
 std::string BrokerConfig::GetClientKeyStorePassword() const
 {
     return vm["SSL_CLIENT_KEYSTORE_PASSWORD"].as<std::string>();
+}
+
+
+std::string BrokerConfig::GetTCPAdress() const {
+    return vm["ZMQ_PUB_LISTEN"].as<std::string>();
 }
