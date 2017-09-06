@@ -16,7 +16,7 @@ As they are read (by MsgInbound), they are routed internally
 using a [*Publish Subcribe*](http://www.enterpriseintegrationpatterns.com/patterns/messaging/PublishSubscribeChannel.html)
 pattern, built with ZeroMQ.
 
-On the other side we have a consumer (MsgOutboundExternal)
+On the other side we have a consumer (MsgOutboundStomp)
 implementing a [*Content Based Router*](http://www.enterpriseintegrationpatterns.com/patterns/messaging/ContentBasedRouter.html)
 combined with a [*Messaging Bridge*](http://www.enterpriseintegrationpatterns.com/patterns/messaging/MessagingBridge.html),
 so each message type is directed to the appropriate topic of

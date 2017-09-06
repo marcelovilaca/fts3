@@ -19,7 +19,7 @@
  */
 
 #include <memory>
-#include "MsgOutboundExternal.h"
+#include "MsgOutboundStomp.h"
 #include "common/Logger.h"
 
 #include "config/ServerConfig.h"
@@ -49,7 +49,7 @@ extern bool stopThreads;
 using namespace fts3::common;
 
 
-MsgOutboundExternal::MsgOutboundExternal(zmq::context_t &zmqContext, const BrokerConfig& config):
+MsgOutboundStomp::MsgOutboundStomp(zmq::context_t &zmqContext, const BrokerConfig& config):
     brokerConfig(config), subscribeSocket(zmqContext, ZMQ_SUB)
 {
     connection = NULL;
@@ -69,13 +69,13 @@ MsgOutboundExternal::MsgOutboundExternal(zmq::context_t &zmqContext, const Broke
     subscribeSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
 }
 
-MsgOutboundExternal::~MsgOutboundExternal()
+MsgOutboundStomp::~MsgOutboundStomp()
 {
     cleanup();
 }
 
 
-void MsgOutboundExternal::routeMessage(zmq::message_t &rawMsg)
+void MsgOutboundStomp::routeMessage(zmq::message_t &rawMsg)
 {
     const std::string body(static_cast<const char*>(rawMsg.data()), rawMsg.size());
 
@@ -153,7 +153,7 @@ void MsgOutboundExternal::routeMessage(zmq::message_t &rawMsg)
 }
 
 
-bool MsgOutboundExternal::getConnection()
+bool MsgOutboundStomp::getConnection()
 {
     try {
         // Set properties for SSL, if enabled
@@ -249,7 +249,7 @@ bool MsgOutboundExternal::getConnection()
 
 // If something bad happens you see it here as this class is also been
 // registered as an ExceptionListener with the connection.
-void MsgOutboundExternal::onException(const cms::CMSException &ex AMQCPP_UNUSED)
+void MsgOutboundStomp::onException(const cms::CMSException &ex AMQCPP_UNUSED)
 {
     FTS3_COMMON_LOGGER_LOG(ERR, ex.getMessage());
     connected = false;
@@ -257,7 +257,7 @@ void MsgOutboundExternal::onException(const cms::CMSException &ex AMQCPP_UNUSED)
 }
 
 
-void MsgOutboundExternal::run()
+void MsgOutboundStomp::run()
 {
     while (stopThreads == false) {
         try {
@@ -300,11 +300,11 @@ void MsgOutboundExternal::run()
             sleep(5);
         }
     }
-    FTS3_COMMON_LOGGER_LOG(INFO, "MsgOutboundExternal exiting");
+    FTS3_COMMON_LOGGER_LOG(INFO, "MsgOutboundStomp exiting");
 }
 
 
-void MsgOutboundExternal::cleanup()
+void MsgOutboundStomp::cleanup()
 {
     delete destination_transfer_started;
     destination_transfer_started = NULL;

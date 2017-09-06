@@ -47,7 +47,7 @@ set_target_properties(fts_msg_ifce PROPERTIES
 set(fts_msg_bulk_SOURCES
     msg-bulk-send.cpp
         MsgInbound.cpp
-        MsgOutboundExternal.cpp
+        MsgOutboundStomp.cpp
 	BrokerConfig.cpp
 )
 

@@ -127,7 +127,7 @@ public:
 class MsgIfce
 {
 private:
-    friend class MsgOutboundExternal;
+    friend class MsgOutboundStomp;
 
     std::unique_ptr<DirQ> monitoringQueue;
 

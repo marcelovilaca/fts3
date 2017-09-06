@@ -31,7 +31,7 @@
 
 #include "BrokerConfig.h"
 #include "MsgInbound.h"
-#include "MsgOutboundExternal.h"
+#include "MsgOutboundStomp.h"
 
 using namespace fts3::common;
 using namespace fts3::config;
@@ -88,14 +88,14 @@ static void DoServer(bool isDaemon) throw()
         zmq::context_t zmqContext(0);
 
         MsgInbound pipeMsg(monitoringMsgDir, zmqContext);
-        MsgOutboundExternal stompProducer(zmqContext, config);
+        MsgOutboundStomp stompProducer(zmqContext, config);
 
         boost::thread_group threads;
         threads.add_thread(
             new boost::thread(boost::bind(&MsgInbound::run, &pipeMsg))
         );
         threads.add_thread(
-            new boost::thread(boost::bind(&MsgOutboundExternal::run, &stompProducer))
+            new boost::thread(boost::bind(&MsgOutboundStomp::run, &stompProducer))
         );
 
         FTS3_COMMON_LOGGER_LOG(INFO, "Threads started");

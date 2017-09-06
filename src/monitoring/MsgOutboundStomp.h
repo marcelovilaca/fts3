@@ -41,7 +41,7 @@
 #include "msg-ifce.h"
 
 
-class MsgOutboundExternal : public decaf::lang::Runnable, public cms::ExceptionListener
+class MsgOutboundStomp : public decaf::lang::Runnable, public cms::ExceptionListener
 {
 private:
 
@@ -66,8 +66,8 @@ private:
     void cleanup();
 
 public:
-    MsgOutboundExternal(zmq::context_t &zmqContext, const BrokerConfig& config);
-    virtual ~MsgOutboundExternal();
+    MsgOutboundStomp(zmq::context_t &zmqContext, const BrokerConfig& config);
+    virtual ~MsgOutboundStomp();
     void routeMessage(zmq::message_t &msg);
     virtual void run();
     virtual void onException(const cms::CMSException& ex AMQCPP_UNUSED);
