@@ -60,7 +60,7 @@ private:
 
     std::string FTSEndpoint;
     const BrokerConfig& brokerConfig;
-    zmq::socket_t subscribeSocket;
+    zmq::context_t &zmqContext;
 
     bool getConnection();
     void cleanup();

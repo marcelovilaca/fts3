@@ -35,9 +35,9 @@ class MsgInbound : public decaf::lang::Runnable
 {
 private:
     std::unique_ptr<DirQ> pullFromDirq;
-    zmq::socket_t publishSocket;
+    zmq::context_t &zmqContext;
 
-    int consume();
+    int consume(zmq::socket_t &publishSocket);
 
 public:
     MsgInbound(const std::string &fromDir, zmq::context_t &zmqContext);

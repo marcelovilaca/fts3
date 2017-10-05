@@ -29,9 +29,8 @@ namespace fs = boost::filesystem;
 
 MsgInbound::MsgInbound(const std::string &fromDir, zmq::context_t &zmqContext) :
     pullFromDirq(new DirQ(fromDir + "/monitoring")),
-    publishSocket(zmqContext, ZMQ_PUB)
+    zmqContext(zmqContext)
 {
-    publishSocket.bind(SUBSCRIBE_SOCKET_ID);
 }
 
 
@@ -40,7 +39,7 @@ MsgInbound::~MsgInbound()
 }
 
 
-int MsgInbound::consume()
+int MsgInbound::consume(zmq::socket_t &publishSocket)
 {
     const char *error = NULL;
     pullFromDirq->clearError();
@@ -88,18 +87,24 @@ int MsgInbound::consume()
 
 void MsgInbound::run()
 {
-    int type;
-    size_t typeSize = sizeof(type);
+    zmq::socket_t publishSocket(zmqContext, ZMQ_PUB);
+    publishSocket.bind(SUBSCRIBE_SOCKET_ID);
 
     // Dirty hack to check if the context is still alive
-    while (zmq_getsockopt(static_cast<void*>(publishSocket), ZMQ_TYPE, &type, &typeSize) == 0) {
+    zmq::message_t emptyMsg;
+
+    while (true) {
         try {
-            int returnValue = consume();
+            int returnValue = consume(publishSocket);
             if (returnValue != 0) {
                 std::ostringstream errorMessage;
                 errorMessage << "runConsumerMonitoring returned " << returnValue;
                 FTS3_COMMON_LOGGER_LOG(ERR, errorMessage.str());
             }
+
+            // Always send one empty, to force termination when the context is closed
+            // I can't figure out another way for the version in SL6
+            publishSocket.send(emptyMsg, 0);
         }
         catch (const zmq::error_t &ex) {
             if (ex.num() == ETERM) {

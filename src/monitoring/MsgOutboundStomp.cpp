@@ -44,13 +44,11 @@ using namespace fts3::config;
 // compatibility until people stops dropping the last byte.
 static const char EOT = ' ';
 
-extern bool stopThreads;
-
 using namespace fts3::common;
 
 
 MsgOutboundStomp::MsgOutboundStomp(zmq::context_t &zmqContext, const BrokerConfig& config):
-    brokerConfig(config), subscribeSocket(zmqContext, ZMQ_SUB)
+    brokerConfig(config), zmqContext(zmqContext)
 {
     connection = NULL;
     session = NULL;
@@ -64,9 +62,6 @@ MsgOutboundStomp::MsgOutboundStomp(zmq::context_t &zmqContext, const BrokerConfi
     destination_optimizer = NULL;
     FTSEndpoint = fts3::config::ServerConfig::instance().get<std::string>("Alias");
     connected = false;
-
-    subscribeSocket.connect(SUBSCRIBE_SOCKET_ID);
-    subscribeSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
 }
 
 MsgOutboundStomp::~MsgOutboundStomp()
@@ -259,7 +254,12 @@ void MsgOutboundStomp::onException(const cms::CMSException &ex AMQCPP_UNUSED)
 
 void MsgOutboundStomp::run()
 {
+    zmq::socket_t subscribeSocket(zmqContext, ZMQ_SUB);
     zmq::message_t msg;
+
+    subscribeSocket.connect(SUBSCRIBE_SOCKET_ID);
+    subscribeSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+
     while (true) {
         try {
             if (!connected) {

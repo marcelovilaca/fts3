@@ -37,8 +37,9 @@
 using namespace fts3::common;
 using namespace fts3::config;
 
-// Shared ZeroMQ context
-std::unique_ptr<zmq::context_t> zmqContext(new zmq::context_t(1));
+boost::mutex stopServerMutex;
+boost::condition_variable stopServerCv;
+bool stopServer = false;
 
 
 static void shutdown_callback(int signum, void*)
@@ -48,7 +49,11 @@ static void shutdown_callback(int signum, void*)
     FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Future signals will be ignored!" << commit;
     FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Messaging server stopping" << commit;
 
-    zmqContext.reset(NULL);
+    {
+        boost::lock_guard<boost::mutex> lock(stopServerMutex);
+        stopServer = true;
+        stopServerCv.notify_all();
+    }
 
     // Some require traceback
     switch (signum)
@@ -88,6 +93,7 @@ static void DoServer(bool isDaemon) throw()
         theLogger().setLogLevel(Logger::getLogLevel(ServerConfig::instance().get<std::string>("LogLevel")));
 
         activemq::library::ActiveMQCPP::initializeLibrary();
+        std::unique_ptr<zmq::context_t> zmqContext(new zmq::context_t(1));
 
         MsgInbound pipeMsg(monitoringMsgDir, *zmqContext);
         MsgOutboundStomp stompProducer(*zmqContext, config);
@@ -105,6 +111,17 @@ static void DoServer(bool isDaemon) throw()
         );
 
         FTS3_COMMON_LOGGER_LOG(INFO, "Threads started");
+
+        boost::unique_lock<boost::mutex> lock(stopServerMutex);
+        while (!stopServer) {
+            stopServerCv.wait(lock);
+        }
+
+        FTS3_COMMON_LOGGER_LOG(INFO, "Stopping threads");
+        // This is super-ugly, but I can't think of any other way of interrupting the blocked zmq_* calls
+        // Note that when the context is terminated (which happens on destruction), all sockets created
+        // using that context will fail with ETERM
+        zmqContext.reset(NULL);
 
         threads.join_all();
         FTS3_COMMON_LOGGER_LOG(INFO, "Threads exited");

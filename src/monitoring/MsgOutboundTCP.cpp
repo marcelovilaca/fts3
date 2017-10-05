@@ -18,15 +18,10 @@
 #include "MsgOutboundTCP.h"
 #include "MsgInbound.h"
 
-extern bool stopThreads;
-
 
 MsgOutboundTCP::MsgOutboundTCP(zmq::context_t &zmqContext, const std::string &bindAddress):
-    subscribeSocket(zmqContext, ZMQ_SUB), publisherSocket(zmqContext, ZMQ_PUB)
+    zmqContext(zmqContext), bindAddress(bindAddress)
 {
-    subscribeSocket.connect(SUBSCRIBE_SOCKET_ID);
-    subscribeSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
-    publisherSocket.bind(("tcp://" + bindAddress).c_str());
 }
 
 
@@ -37,6 +32,11 @@ MsgOutboundTCP::~MsgOutboundTCP()
 
 void MsgOutboundTCP::run()
 {
+    zmq::socket_t subscribeSocket(zmqContext, ZMQ_SUB), publisherSocket(zmqContext, ZMQ_PUB);
+    subscribeSocket.connect(SUBSCRIBE_SOCKET_ID);
+    subscribeSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+    publisherSocket.bind(("tcp://" + bindAddress).c_str());
+
     FTS3_COMMON_LOGGER_LOG(INFO, "Starting ZeroMQ forwarder");
     zmq_device(ZMQ_FORWARDER, static_cast<void*>(subscribeSocket), static_cast<void*>(publisherSocket));
     FTS3_COMMON_LOGGER_LOG(INFO, "ZeroMQ forwarder stopped");

@@ -22,7 +22,8 @@
 
 class MsgOutboundTCP {
 private:
-    zmq::socket_t subscribeSocket, publisherSocket;
+    zmq::context_t &zmqContext;
+    std::string bindAddress;
 
 public:
     MsgOutboundTCP(zmq::context_t &zmqContext, const std::string &bindAddress);
