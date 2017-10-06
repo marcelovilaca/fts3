@@ -15,6 +15,7 @@
  */
 
 #include "Channel.h"
+#include <boost/thread.hpp>
 
 namespace fts3 {
 namespace events {
@@ -22,18 +23,6 @@ namespace events {
 
 Consumer::Consumer(zmq::socket_t && socket): zmqSocket(std::move(socket))
 {
-}
-
-
-bool Consumer::receive(google::protobuf::Message *msg, bool block)
-{
-    int flags = block ? 0:ZMQ_NOBLOCK;
-    zmq::message_t message;
-    if (!zmqSocket.recv(&message, flags)) {
-        return false;
-    }
-    msg->ParseFromArray(message.data(), message.size());
-    return true;
 }
 
 
@@ -114,15 +103,20 @@ void Poller::add(Consumer *consumer, CallbackFunction callback)
 
 bool Poller::poll(boost::posix_time::time_duration timeout)
 {
-    zmq::poll(zmqPollItems.data(), zmqPollItems.size(), timeout.total_microseconds());
     bool ret = false;
 
-    for (int i = 0; i < zmqPollItems.size(); ++i) {
-        if (zmqPollItems[i].revents & ZMQ_POLLIN) {
-            Consumer *consumer = consumers[i].first;
-            CallbackFunction &callback = consumers[i].second;
-            callback(consumer);
-            ret = true;
+    while (zmq::poll(zmqPollItems.data(), zmqPollItems.size(), timeout.total_microseconds()) &&
+        !boost::this_thread::interruption_requested()) {
+        for (int i = 0; i < zmqPollItems.size(); ++i) {
+            if (zmqPollItems[i].revents & ZMQ_POLLIN) {
+                zmq::message_t msg;
+                Consumer *consumer = consumers[i].first;
+                CallbackFunction &callback = consumers[i].second;
+                if (consumer->zmqSocket.recv(&msg, 0)) {
+                    callback(msg.data(), msg.size());
+                }
+                ret = true;
+            }
         }
     }
 

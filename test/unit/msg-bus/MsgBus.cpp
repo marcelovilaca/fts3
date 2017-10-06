@@ -63,15 +63,15 @@ public:
         boost::filesystem::remove_all(TEST_PATH);
     }
 
-    void consumeStatus(Consumer *consumer) {
+    void consumeStatus(void *data, size_t size) {
         MessageUrlCopy msg;
-        consumer->receive(&msg, false);
+        msg.ParseFromArray(data, size);
         receivedStatus.emplace_back(msg);
     }
 
-    void consumePing(Consumer *consumer) {
+    void consumePing(void *data, size_t size) {
         MessageUrlCopyPing msg;
-        consumer->receive(&msg, false);
+        msg.ParseFromArray(data, size);
         receivedPing.emplace_back(msg);
     }
 };
@@ -105,12 +105,16 @@ BOOST_FIXTURE_TEST_CASE (simpleStatus, MsgBusFixture)
     BOOST_CHECK(producer->send(original));
 
     // First attempt must return the single message
-    MessageUrlCopy received;
-    BOOST_CHECK(consumer->receive(&received));
-    BOOST_CHECK_EQUAL(received, original);
+    Poller poller;
+    poller.add(consumer.get(), boost::bind(&MsgBusFixture::consumeStatus, this, _1, _2));
+    BOOST_CHECK(poller.poll(boost::posix_time::seconds(1)));
+
+    BOOST_CHECK_EQUAL(receivedStatus[0], original);
 
     // Second attempt must return empty (already consumed)
-    BOOST_CHECK(!consumer->receive(&received, false));
+    receivedStatus.clear();
+    BOOST_CHECK(!poller.poll(boost::posix_time::milliseconds(10)));
+    BOOST_CHECK_EQUAL(0, receivedStatus.size());
 }
 
 
@@ -123,8 +127,8 @@ BOOST_FIXTURE_TEST_CASE (pollOne, MsgBusFixture)
     auto consumerPing = factory.createConsumer(UrlCopyPingChannel);
 
     Poller poller;
-    poller.add(consumerStatus.get(), boost::bind(&MsgBusFixture::consumeStatus, this, _1));
-    poller.add(consumerPing.get(), boost::bind(&MsgBusFixture::consumePing, this, _1));
+    poller.add(consumerStatus.get(), boost::bind(&MsgBusFixture::consumeStatus, this, _1, _2));
+    poller.add(consumerPing.get(), boost::bind(&MsgBusFixture::consumePing, this, _1, _2));
 
     MessageUrlCopy original;
     original.set_job_id("1906cc40-b915-11e5-9a03-02163e006dd0");
@@ -162,8 +166,8 @@ BOOST_FIXTURE_TEST_CASE (pollTwo, MsgBusFixture)
     auto consumerPing = factory.createConsumer(UrlCopyPingChannel);
 
     Poller poller;
-    poller.add(consumerStatus.get(), boost::bind(&MsgBusFixture::consumeStatus, this, _1));
-    poller.add(consumerPing.get(), boost::bind(&MsgBusFixture::consumePing, this, _1));
+    poller.add(consumerStatus.get(), boost::bind(&MsgBusFixture::consumeStatus, this, _1, _2));
+    poller.add(consumerPing.get(), boost::bind(&MsgBusFixture::consumePing, this, _1, _2));
 
     MessageUrlCopy original;
     original.set_job_id("1906cc40-b915-11e5-9a03-02163e006dd0");

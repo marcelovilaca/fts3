@@ -46,11 +46,6 @@ private:
     Consumer(zmq::socket_t && socket);
 
 public:
-    /// Receive a message from the channel
-    /// @param msg      Where to deserialize the message
-    /// @param block    If true, this method will block until there is something to consume
-    /// @return         true if something has been consumed
-    bool receive(google::protobuf::Message *msg, bool block=true);
 };
 
 /// Producer wraps the producer end of a channel
@@ -101,7 +96,7 @@ public:
 /// Poller allows to poll multiple consumers, so the client code can demultiplex
 class Poller {
 public:
-    typedef boost::function<void (Consumer *consumer)> CallbackFunction;
+    typedef boost::function<void (void*, size_t)> CallbackFunction;
 
 private:
     std::vector<std::pair<Consumer*, CallbackFunction>> consumers;

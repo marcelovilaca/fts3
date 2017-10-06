@@ -34,10 +34,10 @@ SupervisorService::SupervisorService(): BaseService("SupervisorService"),
 }
 
 /// Handle ping messages
-static void pingCallback(events::Consumer *consumer)
+static void pingCallback(void *data, size_t size)
 {
     events::MessageUrlCopyPing event;
-    while (consumer->receive(&event, false)) {
+    if (event.ParseFromArray(data, size)) {
         FTS3_COMMON_LOGGER_NEWLOG(INFO)
             << "Process Updater Monitor "
             << "\nJob id: " << event.job_id()
@@ -126,10 +126,10 @@ static void handleStatusUpdate(const events::MessageUrlCopy &event)
 }
 
 /// Handle status messages
-static void statusCallback(events::Consumer *consumer)
+static void statusCallback(void *data, size_t size)
 {
     events::MessageUrlCopy event;
-    while (consumer->receive(&event, false)) {
+    if (event.ParseFromArray(data, size)) {
         if (event.transfer_status() == "UPDATE") {
             handleProtocolUpdate(event);
         }
@@ -140,10 +140,10 @@ static void statusCallback(events::Consumer *consumer)
 }
 
 /// Handle log messages
-static void logCallback(events::Consumer *consumer)
+static void logCallback(void *data, size_t size)
 {
     events::MessageLog event;
-    while(consumer->receive(&event, false)) {
+    if (event.ParseFromArray(data, size)) {
         FTS3_COMMON_LOGGER_NEWLOG(DEBUG)
             << "Log for " << event.job_id() << "/" << event.file_id()
             << ": " << event.log_path()
