@@ -111,7 +111,7 @@ static void handleStatusUpdate(const events::MessageUrlCopy &event)
         db->transferLogFile(event.file_id(), event.log_path(), event.has_debug_file());
     }
 
-    db->updateJobStatus(event.job_id(), event.transfer_status(), event.process_id());
+    db->updateJobStatus(event.job_id(), event.transfer_status());
 
     if (!updated.get<0>() && event.transfer_status() != "CANCELED") {
         FTS3_COMMON_LOGGER_NEWLOG(ERR)
