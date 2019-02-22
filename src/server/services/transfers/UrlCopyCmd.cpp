@@ -127,7 +127,8 @@ void UrlCopyCmd::setUDT(boost::tribool set)
     if (boost::indeterminate(set)) {
         setFlag("udt", false);
     } else {
-        setFlag("udt", set);
+        bool value = set;
+        setFlag("udt", value);
     }
 }
 
@@ -140,9 +141,10 @@ void UrlCopyCmd::setIPv6(boost::tribool set)
         setFlag("ipv4", false);
     }
     else {
+        bool value = set;
         IPv6Explicit = true;
-        setFlag("ipv6", set);
-        setFlag("ipv4", !set);
+        setFlag("ipv6", value);
+        setFlag("ipv4", !value);
     }
 }
 
