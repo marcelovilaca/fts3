@@ -122,9 +122,13 @@ void UrlCopyCmd::setProxy(const std::string &path)
 }
 
 
-void UrlCopyCmd::setUDT(bool set)
+void UrlCopyCmd::setUDT(boost::tribool set)
 {
-    setFlag("udt", set);
+    if (boost::indeterminate(set)) {
+        setFlag("udt", false);
+    } else {
+        setFlag("udt", set);
+    }
 }
 
 
