@@ -26,6 +26,8 @@
 #include "AutoInterruptThread.h"
 #include "UrlCopyProcess.h"
 #include "version.h"
+#include <cajun/json/elements.h>
+#include <cajun/json/reader.h>
 
 using fts3::common::commit;
 
@@ -78,6 +80,7 @@ static void setupGlobalGfal2Config(const UrlCopyOpts &opts, Gfal2 &gfal2)
         setenv("X509_USER_KEY", opts.proxy.c_str(), 1);
     }
 }
+
 
 
 UrlCopyProcess::UrlCopyProcess(const UrlCopyOpts &opts, Reporter &reporter):
@@ -360,6 +363,67 @@ static void pingTask(Transfer *transfer, Reporter *reporter)
     }
 }
 
+static std::string replaceMetadataString(std::string text)
+{
+    text = boost::replace_all_copy(text, "?"," ");
+    text = boost::replace_all_copy(text, "\\\"","\"");
+    return text;
+}
+
+static std::string queryArgs( const std::string &key, const std::string &value)
+{
+    std::ostringstream args;
+
+    //TODO to implement the fill of the query parameter group-hints which is an array base64 encoded
+
+    return args.str();
+}
+
+
+static void fillQuery(const std::string &key, const std::string &value,
+		fts3::common::Uri *destURI )
+{
+
+    std::string args = g_strconcat(key.c_str(), "=", value.c_str(), NULL);
+    if (destURI->queryString != "") {
+        destURI->fullUri.append("&");
+    } else {
+        destURI->fullUri.append("?");
+    }
+    destURI->fullUri.append(args);
+}
+
+static void fillDestinationQueryParameters(Transfer *transfer)
+{
+
+    try {
+       if (!transfer->fileMetadata.empty()) {
+    	   std::string s = replaceMetadataString(transfer->fileMetadata);
+    	   std::istringstream ss(s);
+    	   json::Object obj;
+    	   try {
+    		   json::Reader::Read(obj, ss);
+    	       json::Object::const_iterator it = obj.Find("storage_class");
+    	       if (it != obj.End()) {
+    	           const json::String storageClass = it->element;
+    	           fillQuery("storage_class",storageClass.Value(), &transfer->destination);
+    	       }
+    	       //it = obj.Find("group-hints");
+    	       //if (it != obj.End()) {
+    	       //    const json::String group_hints = it->element;
+    	       //    fill_query("group-hints",group_hints.Value(), transfer->destination)
+    	       //}
+    	    } catch (json::Exception) {
+    	    	 //do nothing
+    	    }
+       }
+    }
+        //
+    catch (const std::exception &ex) {
+        FTS3_COMMON_LOGGER_NEWLOG(ERR) << "Unexpected exception when filling the query parameters task: " << ex.what() << commit;
+    }
+}
+
 
 void UrlCopyProcess::runTransfer(Transfer &transfer, Gfal2TransferParams &params)
 {
@@ -389,6 +453,11 @@ void UrlCopyProcess::runTransfer(Transfer &transfer, Gfal2TransferParams &params
     FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Source token issuer: " << transfer.sourceTokenIssuer << commit;
     FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Destination token issuer: " << transfer.destTokenIssuer << commit;
 
+
+    if ((transfer.destination.protocol.find("root") ==0)  ||  (transfer.destination.protocol.find("xroot") == 0)) {
+        // fill query parameter from file metadata
+        fillDestinationQueryParameters(&transfer);
+    }
     if (opts.strictCopy) {
         FTS3_COMMON_LOGGER_NEWLOG(INFO) << "Copy only transfer!" << commit;
         transfer.fileSize = transfer.userFileSize;
@@ -420,6 +489,7 @@ void UrlCopyProcess::runTransfer(Transfer &transfer, Gfal2TransferParams &params
             }
         }
     }
+
 
     // Timeout
     unsigned timeout = opts.timeout;
