@@ -161,6 +161,7 @@ FTS messaging integration
 Summary:    File Transfer Service version 3 client
 Group:      Applications/Internet
 Requires:   fts-libs%{?_isa} = %{version}-%{release}
+Requires:   libcurl-openssl
 
 %description client
 A set of command line tools for submitting, querying
