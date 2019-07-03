@@ -33,6 +33,9 @@ find_package(Boost COMPONENTS program_options unit_test_framework REQUIRED)
 # Require soap headers
 include_directories ("${CMAKE_BINARY_DIR}/src/ws-ifce/gsoap")
 
+
+#trying curl with openssl
+include_directories("/opt/shibboleth/include")
 set(CURL_LIBRARY /opt/shibboleth/lib64/libcurl.so.4 CACHE filepath "path to libcurl.so.4")
 
 # add a target to generate API documentation with Doxygen
