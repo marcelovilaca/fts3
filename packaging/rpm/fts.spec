@@ -50,7 +50,7 @@ BuildRequires:  gfal2-devel >= 2.14.2
 BuildRequires:  glib2-devel
 BuildRequires:  globus-gsi-credential-devel
 BuildRequires:  gridsite-devel
-BuildRequires:  libcurl-devel
+BuildRequires:  libcurl-openssl-devel
 BuildRequires:  openldap-devel
 BuildRequires:  protobuf-devel
 BuildRequires:  pugixml-devel

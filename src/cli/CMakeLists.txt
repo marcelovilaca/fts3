@@ -33,6 +33,8 @@ find_package(Boost COMPONENTS program_options unit_test_framework REQUIRED)
 # Require soap headers
 include_directories ("${CMAKE_BINARY_DIR}/src/ws-ifce/gsoap")
 
+set(CURL_LIBRARY /opt/shibboleth/lib64/libcurl.so.4 CACHE filepath "path to libcurl.so.4")
+
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
@@ -53,7 +55,7 @@ set (fts_cli_internal_libs
 set(fts_cli_libs
     ${fts_cli_internal_libs}
     gridsite
-    curl
+    ${CURL_LIBRARY}
 	globus_gsi_sysconfig
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
 )
