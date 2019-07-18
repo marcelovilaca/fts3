@@ -22,7 +22,7 @@
 #define HTTPGET_H_
 
 #include <stdio.h>
-#include "/opt/shibboleth/include/curl/curl.h"
+#include <curl/curl.h>
 
 #include <string>
 #include <sstream>

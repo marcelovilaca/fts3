@@ -34,9 +34,19 @@ find_package(Boost COMPONENTS program_options unit_test_framework REQUIRED)
 include_directories ("${CMAKE_BINARY_DIR}/src/ws-ifce/gsoap")
 
 
-#trying curl with openssl
-include_directories("/opt/shibboleth/include/curl")
-set(CURL_LIBRARY /opt/shibboleth/lib64/libcurl.so.4 CACHE filepath "path to libcurl.so.4")
+# Include directories for our newer version of curl
+set(CURL_DIR /tmp/curl/bogusinstall)
+set(CURL_LIBRARIES ${CURL_DIR}/lib${LIB_SUFFIX}/ws2_32 ${CURL_DIR}/lib${LIB_SUFFIX}/iphlpapi ${CURL_DIR}/lib${LIB_SUFFIX}/libcurl)
+set(CURL_INCLUDE_DIR ${CURL_DIR}/include/)
+set(CURL_LIBRARY ${CURL_DIR}/lib${LIB_SUFFIX}/libcurl.a CACHE filepath "path to libcurl.a")
+find_file(Curl_local libcurl.a PATHS ${CURL_DIR}/lib${LIB_SUFFIX}/ )
+if (NOT Curl_local)
+  message("-- LibCurl not found in '${CURL_LIBRARY}'")
+endif()
+
+add_definitions(-DCURL_STATICLIB)
+
+include_directories(${CURL_INCLUDE_DIR})
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
@@ -59,7 +69,7 @@ set(fts_cli_libs
     ${fts_cli_internal_libs}
     gridsite
     ${CURL_LIBRARY}
-	globus_gsi_sysconfig
+    globus_gsi_sysconfig
     ${Boost_PROGRAM_OPTIONS_LIBRARY}
 )
 
