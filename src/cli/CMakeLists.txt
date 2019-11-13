@@ -52,7 +52,7 @@ find_file(Curl_local libcurl.a PATHS ${CURL_DIR}/lib${LIB_SUFFIX}/ )
 add_definitions(-DCURL_STATICLIB)
 
 include_directories(${CURL_INCLUDE_DIR})
-
+message(${CURL_INCLUDE_DIR})
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
