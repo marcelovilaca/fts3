@@ -437,7 +437,6 @@ po::options_description ServerConfigReader::_defineConfigOptions()
     	po::value<std::string>( &(_vars["AutoSessionReuse"]) )->default_value("false"),
 	"Enable or disable auto session reuse"
     )
-
     (   "AutoSessionReuseMaxSmallFileSize",
     	po::value<int>()->default_value(104857600),
 	"Max small file size for session reuse in bytes"
@@ -458,6 +457,11 @@ po::options_description ServerConfigReader::_defineConfigOptions()
         "UseFixedJobPriority",
         po::value<std::string>( &(_vars["UseFixedJobPriority"]) )->default_value("0"),
         "Configure the system to use a fixed Job Priority, by default it queries the system to honour the priorities specified by the users"
+    )
+    (
+        "RetrieveSEToken",
+        po::value<std::string>( &(_vars["RetrieveSEToken"]) )->default_value("true"),
+        "Enable or disable retrieval of SE-issued tokens in the transfer agent"
     )
     ;
 

@@ -54,6 +54,7 @@ const option UrlCopyOpts::long_options[] =
     {"source-issuer",     required_argument, 0, 504},
     {"dest-issuer",       required_argument, 0, 505},
 	{"authMethod",        required_argument, 0, 506},
+    {"retrieve-se-token", no_argument,       0, 507},
 
     {"infosystem",        required_argument, 0, 600},
     {"alias",             required_argument, 0, 601},
@@ -294,6 +295,10 @@ void UrlCopyOpts::parse(int argc, char * const argv[])
                 case 506:
                 	authMethod = optarg;
                     break;
+                case 507:
+                    retrieveSEToken = true;
+                    break;
+
                 case 600:
                     infosys = optarg;
                     break;

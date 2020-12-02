@@ -145,6 +145,9 @@ AutoSessionReuse = False
 #by default it queries the system to honour the priorities specified by the users ( value = 0)
 #UseFixedJobPriority = 0
 
+# Flag for the Transfer Agent to retrieve Storage Element issued tokens (e.g.: macaroons) (default true)
+#RetrieveSEToken = true
+
 ValidateAccessTokenOffline=True
 JWKCacheSeconds=86400
 TokenRefreshDaemonIntervalInSeconds=600
