@@ -168,7 +168,7 @@ static Transfer::TransferList initListFromFile(const Transfer &reference, const 
 
 UrlCopyOpts::UrlCopyOpts():
     isSessionReuse(false), isMultipleReplicaJob(false),
-    strictCopy(false),
+    strictCopy(false), retrieveSEToken(false),
     optimizerLevel(0), overwrite(false), nStreams(0), tcpBuffersize(0),
     timeout(0), enableUdt(false), enableIpv6(boost::indeterminate), addSecPerMb(0),
     enableMonitoring(false), active(0), retry(0), retryMax(0),
